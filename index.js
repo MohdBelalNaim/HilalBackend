@@ -12,7 +12,9 @@ mongoose
   .catch((err) => console.log(err));
 
 app.use("/auth", require("./routes/auth"));
-
+app.get("/", (req, res) => {
+  res.json({ message: "All set!" });
+});
 app.listen(port, () => {
   console.log("App is running on ", port);
 });
