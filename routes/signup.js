@@ -70,12 +70,13 @@ router.post("/bio/:id", (req, res) => {
   }
 });
 
-router.get("/verify-email", async (req, res) => {
+router.post("/verify-email", async (req, res) => {
+  const { to } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000);
   const hashedOtp = await bcryptjs.hash(otp.toString(), 12);
   const mailOptions = {
     from: "noreply@hilallink.com",
-    to: "sajadkhaki.jk@gmail.com",
+    to: to,
     subject: "Verify your email address",
     html: `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -154,7 +155,5 @@ router.post("/photo/:id", (req, res) => {
       console.log(err);
     });
 });
-
-
 
 module.exports = router;

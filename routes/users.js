@@ -14,7 +14,7 @@ router.post("/all", (req, res) => {
     });
 });
 
-router.post("/user/:id", (req, res) => {
+router.post("/by-id/:id", (req, res) => {
   const { id } = req.params;
   User.findById(id)
     .then((found) => {
@@ -101,7 +101,7 @@ router.put("/unfollow/:id", verifyToken, (req, res) => {
 });
 
 router.post("/my", verifyToken, (req, res) => {
-  User.findById(req.user)
+  User.findOne({ _id: req.user })
     .then((found) => {
       if (found) res.json(found);
       else res.json({ error: "No user found" });
@@ -111,4 +111,18 @@ router.post("/my", verifyToken, (req, res) => {
       console.log(err);
     });
 });
+
+router.post("/top-users", (req, res) => {
+  User.find()
+    .limit(6)
+    .then((found) => {
+      if (found) res.json({ found });
+      else res.json({ error: "No users found" });
+    })
+    .catch((err) => {
+      res.json({ error: "Somethign went wrong!" });
+      console.log(err);
+    });
+});
+
 module.exports = router;
