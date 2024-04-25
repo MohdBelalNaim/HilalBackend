@@ -2,6 +2,7 @@ const router = require("express").Router();
 const bcrypt = require("bcryptjs");
 const User = require("../model/user");
 const jwt = require("jsonwebtoken");
+const verifyToken = require("../middlewares/verifyToken");
 
 router.post("/signup", async (req, res) => {
   const { accessId, password, name } = req.body;
@@ -41,13 +42,31 @@ router.post("/login", async (req, res) => {
       const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);
       res.json({ token });
     } else {
-      res.json({ error: "Invalid credentials" });
+      res.json({ error: "Invalid email or password" });
     }
   } else {
     return res.json({
-      error: "This email or password is not registered with HilalLink",
+      error: "This email is not registered with HilalLink",
     });
   }
+});
+
+router.post("/password-reset", verifyToken, async (req, res) => {
+  const { password } = req.body;
+  if (!password)
+    return res.json({ error: "A required parameter was missing!" });
+  const hashedPassword = await bcrypt.hash(password, 12);
+  User.updateOne(
+    { _id: req.user },
+    {
+      $set: { password: hashedPassword },
+    }
+  )
+    .then(() => res.json({ success: "Password updated successfully!" }))
+    .catch((err) => {
+      res.json({ error: "Something went wrong!" });
+      console.log(err);
+    });
 });
 
 module.exports = router;

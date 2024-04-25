@@ -19,16 +19,6 @@ const Post = mongoose.Schema({
         required: true,
       },
       text: { type: String, required: true },
-      replies: [
-        {
-          user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-          },
-          text: { type: String, required: true },
-        },
-      ],
     },
   ],
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },

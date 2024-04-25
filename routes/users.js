@@ -62,4 +62,53 @@ router.post("/update", verifyToken, (req, res) => {
     });
 });
 
+router.put("/follow/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  User.findByIdAndUpdate(
+    id,
+    {
+      $push: { followers: req.user },
+    },
+    { new: true }
+  ).then(() => {
+    User.findByIdAndUpdate(
+      req.user,
+      {
+        $push: { following: id },
+      },
+      { new: true }
+    ).then((result) => res.json({ result }));
+  });
+});
+
+router.put("/unfollow/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  User.findByIdAndUpdate(
+    id,
+    {
+      $pull: { followers: req.user },
+    },
+    { new: true }
+  ).then(() => {
+    User.findByIdAndUpdate(
+      req.user,
+      {
+        $pull: { following: id },
+      },
+      { new: true }
+    ).then((result) => res.json({ result }));
+  });
+});
+
+router.post("/my", verifyToken, (req, res) => {
+  User.findById(req.user)
+    .then((found) => {
+      if (found) res.json(found);
+      else res.json({ error: "No user found" });
+    })
+    .catch((err) => {
+      res.json({ error: "Something went wrong!" });
+      console.log(err);
+    });
+});
 module.exports = router;

@@ -14,6 +14,8 @@ const User = mongoose.Schema({
   cover_url: { type: String, default: "" },
   isPremium: { type: Boolean, default: false },
   isPrivate: { type: Boolean, default: false },
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });
 
 module.exports = mongoose.model("User", User);

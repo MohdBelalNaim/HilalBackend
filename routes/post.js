@@ -24,7 +24,7 @@ router.post("/create", verifyToken, (req, res) => {
 
 router.post("/all", (req, res) => {
   Post.find()
-    .populate("user")
+    .populate("user comments.user")
     .then((data) => {
       if (data) res.json({ data });
       else res.json({ error: "No posts found" });
@@ -66,6 +66,90 @@ router.get("/update-views/:id", async (req, res) => {
       },
     }
   );
+});
+
+router.put("/add-comment/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { comment } = req.body;
+  if (!comment) return res.json({ error: "A required parameter was missing!" });
+  Post.findByIdAndUpdate(
+    id,
+    {
+      $push: {
+        comments: {
+          user: req.user,
+          text: comment,
+        },
+      },
+    },
+    {
+      new: true,
+    }
+  )
+    .then((updated) => {
+      res.json({ updated });
+    })
+    .catch({ error: "Something went wrong!" });
+});
+
+router.put("/remove-comment/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { comment } = req.body;
+  if (!comment) return res.json({ error: "A required parameter was missing!" });
+  Post.findByIdAndUpdate(
+    id,
+    {
+      $pull: {
+        comments: {
+          user: req.user,
+          text: comment,
+        },
+      },
+    },
+    {
+      new: true,
+    }
+  )
+    .then((updated) => {
+      res.json({ updated });
+    })
+    .catch({ error: "Something went wrong!" });
+});
+
+router.put("/add-like/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  Post.findByIdAndUpdate(
+    id,
+    {
+      $push: { likes: { user: req.user } },
+    },
+    { new: true }
+  )
+    .then((updated) => res.json({ updated }))
+    .catch((err) => {
+      res.json({ error: "Something went wrong!" });
+      console.log(err);
+    });
+});
+
+router.put("/remove-like/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  Post.findByIdAndUpdate(
+    id,
+    {
+      $pull: { likes: { user: req.user } },
+    },
+    { new: true }
+  )
+    .then((updated) => res.json({ updated }))
+    .catch((err) => {
+      res.json({ error: "Something went wrong!" });
+      console.log(err);
+    });
+});
+
+router.post("/save-post", verifyToken, (req, res) => {
+  
 });
 
 module.exports = router;
