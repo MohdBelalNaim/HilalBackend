@@ -1,5 +1,6 @@
 const verifyToken = require("../middlewares/verifyToken");
 const Post = require("../model/post");
+const saved = require("../model/saved");
 const router = require("express").Router();
 
 router.post("/create", verifyToken, (req, res) => {
@@ -47,7 +48,7 @@ router.post("/post-by-id/:id", (req, res) => {
   const { id } = req.params;
   if (!id) return res.json({ error: "A required parameter was missing!" });
   Post.findById(id)
-    .populate("user")
+    .populate("user comments.user")
     .then((data) => {
       if (data) res.json({ data });
       else res.json({ error: "No posts found" });
@@ -122,7 +123,7 @@ router.put("/add-like/:id", verifyToken, (req, res) => {
   Post.findByIdAndUpdate(
     id,
     {
-      $push: { likes: { user: req.user } },
+      $push: { likes: req.user },
     },
     { new: true }
   )
@@ -138,7 +139,7 @@ router.put("/remove-like/:id", verifyToken, (req, res) => {
   Post.findByIdAndUpdate(
     id,
     {
-      $pull: { likes: { user: req.user } },
+      $pull: { likes: req.user },
     },
     { new: true }
   )
@@ -149,6 +150,32 @@ router.put("/remove-like/:id", verifyToken, (req, res) => {
     });
 });
 
-router.post("/save-post", verifyToken, (req, res) => {});
+router.post("/save-post/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const savedPost = new saved({
+    content: id,
+    user: req.user,
+    date: new Date(),
+  });
+  savedPost
+    .save()
+    .then(() => res.json({ success: "Post saved" }))
+    .catch((err) => {
+      res.json({ error: "Something went wrong!" });
+      console.log(err);
+    });
+});
+router.post("/remove-save-post/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  saved
+    .deleteOne({ $and: [{ user: req.user, content: id }] })
+    .then(() => {
+      res.json({ success: "Post unsaved" });
+    })
+    .catch((err) => {
+      res.json({ error: "Something went wrong!" });
+      console.log(err);
+    });
+});
 
 module.exports = router;
