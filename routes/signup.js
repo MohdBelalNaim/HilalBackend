@@ -2,6 +2,14 @@ const router = require("express").Router();
 const User = require("../model/user");
 const nodemailer = require("nodemailer");
 const bcryptjs = require("bcryptjs");
+const cloudinary = require("cloudinary").v2;
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET
+});
 
 //email config starts
 const mailTransport = nodemailer.createTransport({
@@ -21,7 +29,6 @@ const mailTransport = nodemailer.createTransport({
 });
 
 //email config ends
-
 router.post("/personal-details/:id", (req, res) => {
   const { id } = req.params;
   const { category, gender, country, city, state } = req.body;
@@ -48,34 +55,14 @@ router.post("/personal-details/:id", (req, res) => {
   }
 });
 
-router.post("/bio/:id", (req, res) => {
-  const { id } = req.params;
-  const { bio } = req.body;
-  if (!bio) {
-    return res.json({ error: "All fileds are required!" });
-  } else {
-    User.updateOne(
-      { _id: id },
-      {
-        $set: {
-          bio,
-        },
-      }
-    )
-      .then(() => res.json({ success: "Details updated" }))
-      .catch((err) => {
-        console.log(err);
-        res.json({ error: "Something went wrong" });
-      });
-  }
-});
-
-router.get("/verify-email", async (req, res) => {
+//email verification route
+router.post("/verify-email", async (req, res) => {
+  const { to } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000);
   const hashedOtp = await bcryptjs.hash(otp.toString(), 12);
   const mailOptions = {
     from: "noreply@hilallink.com",
-    to: "sajadkhaki.jk@gmail.com",
+    to: to,
     subject: "Verify your email address",
     html: `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -128,32 +115,149 @@ router.get("/verify-email", async (req, res) => {
   mailTransport
     .sendMail(mailOptions)
     .then(() => {
-      res.json({ success: "Mail sent", hash: hashedOtp });
+      res.json({ success: true, hash: hashedOtp }); // Return a valid JSON response
     })
-    .catch((err) => console.log(err));
-});
-
-router.post("/photo/:id", (req, res) => {
-  const { id } = req.params;
-  const { cover_url, profile_url } = req.body;
-  if (!cover_url || !profile_url) {
-    return res.json({ error: "All feilds are required!" });
-  }
-  User.updateOne(
-    { _id: id },
-    {
-      $set: {
-        cover_url,
-        profile_url,
-      },
-    }
-  )
-    .then(() => res.json({ success: "Details updated!" }))
     .catch((err) => {
-      res.json({ error: "Something went wrong!" });
-      console.log(err);
+      console.error(err);
+      res.status(500).json({ error: "An error occurred while sending email" }); // Handle errors and return JSON
     });
 });
+
+//otp verifictaion route
+router.post("/verify-otp", async (req, res) => {
+  const { otp, hashedOtp } = req.body; 
+
+  try {
+    const otpMatch = await bcryptjs.compare(otp.toString(), hashedOtp);
+
+    if (otpMatch) {
+      res.json({ success: "OTP verified successfully"});
+    } else {
+      res.json({ error: "Invalid OTP" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.json({ error: "Server error" });
+  }
+});
+
+
+// Signup address route
+router.post("/address", async (req, res) => {
+  const { accessId, category,state, gender, city, country } = req.body;
+
+  // Validate category, gender, and country
+  const validCategories = ["Artist", "Creator", "Others"];
+  const validSate = ["Uttar Pradesh", "Bihar", "Assam"];
+  const validGenders = ["Male", "Female", "Prefer not to say"];
+  const validCountries = ["India", "Pakistan", "Others"];
+
+  if (!validCategories.includes(category) ||
+      !validSate.includes(state) ||
+      !validGenders.includes(gender) ||
+      !validCountries.includes(country)) {
+    return res.json({ error: "Invalid category, gender, or country" });
+  }
+  
+  if (!city || !country || !state || !gender || !category) {
+    return res.json({ error: "All fields are required" });
+  }
+
+  try {
+    // Find the user by accessId
+    const user = await User.findOne({ accessId });
+
+    // Check if user exists
+    if (!user) {
+      return res.json({ error: "User not found" });
+    }
+
+    // Update user with address information
+    user.category = category;
+    user.state = state;
+    user.gender = gender;
+    user.country = country;
+    user.city = city;
+
+    // Save the updated user
+    await user.save();
+
+    return res.json({ success: "Address added successfully" });
+  } 
+  catch (error) {
+    console.error("Error adding address information:", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+//bio information route
+router.post("/bio", async (req, res) => {
+  const { accessId, bio } = req.body;
+
+   if (!bio) {
+     return res.json({ error: "All fileds are required!" });
+   }
+
+  try {
+    const user = await User.findOne({ accessId });
+
+    if (!user) {
+      return res.json({ error: "User not found" });
+    }
+
+    user.bio = bio;
+
+    await user.save();
+
+    return res.json({ success: "bio added successfully" });
+  } 
+  catch (error) {
+    console.error("Error adding address information:", error);
+    return res.json({ error: "Something went wrong" });
+  }
+});
+
+//photo upload route
+router.post("/photo", async (req, res) => {
+  const { accessId, profileUrl, coverUrl } = req.body;
+
+  if (!accessId || !profileUrl || !coverUrl) {
+    return res.status(400).json({ error: "Access ID and profile URL are required!" });
+  }
+
+  try {
+    const user = await User.findOne({ accessId });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update user's profile URL
+    user.cover_url = coverUrl;
+    user.profile_url = profileUrl;
+
+    await user.save();
+
+    // Send success response
+    return res.json({ success: "Profile URL added successfully", profileUrl });
+  } catch (error) {
+    console.error("Error adding profile URL:", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+//all user detail
+router.get('/all-user', async(req,res)=>{
+  User.find()
+  .then(found=>{
+      if(found){
+          res.json({users:found})
+      }
+      else{
+          res.json({error:"no user found"})
+      }
+  })
+})
+
 
 
 
