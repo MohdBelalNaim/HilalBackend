@@ -4,7 +4,7 @@ const Post = mongoose.Schema({
   asset_url: { type: String, default: "" },
   date: { type: Date, required: true },
   post_type: { type: String, required: true },
-  text: { type: String, required: true },
+  text: { type: String, default: "" },
   views: { type: Number, default: "0" },
   likes: [
     {

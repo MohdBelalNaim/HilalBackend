@@ -24,6 +24,7 @@ router.post("/create", verifyToken, (req, res) => {
 
 router.post("/all", (req, res) => {
   Post.find()
+    .sort({ date: -1 })
     .populate("user comments.user")
     .then((data) => {
       if (data) res.json({ data });
@@ -148,8 +149,6 @@ router.put("/remove-like/:id", verifyToken, (req, res) => {
     });
 });
 
-router.post("/save-post", verifyToken, (req, res) => {
-  
-});
+router.post("/save-post", verifyToken, (req, res) => {});
 
 module.exports = router;

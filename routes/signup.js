@@ -55,7 +55,31 @@ router.post("/personal-details/:id", (req, res) => {
   }
 });
 
+
 //email verification route
+
+router.post("/bio/:id", (req, res) => {
+  const { id } = req.params;
+  const { bio } = req.body;
+  if (!bio) {
+    return res.json({ error: "All fileds are required!" });
+  } else {
+    User.updateOne(
+      { _id: id },
+      {
+        $set: {
+          bio,
+        },
+      }
+    )
+      .then(() => res.json({ success: "Details updated" }))
+      .catch((err) => {
+        console.log(err);
+        res.json({ error: "Something went wrong" });
+      });
+  }
+});
+
 router.post("/verify-email", async (req, res) => {
   const { to } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000);
@@ -257,8 +281,5 @@ router.get('/all-user', async(req,res)=>{
       }
   })
 })
-
-
-
 
 module.exports = router;
