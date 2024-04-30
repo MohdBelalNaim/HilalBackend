@@ -4,14 +4,20 @@ const User = require("../model/user");
 const jwt = require("jsonwebtoken");
 const verifyToken = require("../middlewares/verifyToken");
 
+//signup route
 router.post("/signup", async (req, res) => {
-  const { accessId, password, name } = req.body;
-  if (!accessId || !password || !name) {
-    return res.json({ error: "All feilds are required!" });
+  const { accessId, password, name ,confirmpassword } = req.body;
+  if (!accessId || !password || !name || !confirmpassword) {
+    return res.json({ error: "All fields are required!" });
   }
+
+  if (password !== confirmpassword) {
+    return res.json({ error: "Password and confirm password should be the same!" });
+  }
+
   const checkUser = await User.findOne({ accessId });
   if (checkUser) {
-    return res.json({ error: "This email or password is already in use!" });
+    return res.json({ error: "This email is already in use!" });
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
@@ -23,13 +29,17 @@ router.post("/signup", async (req, res) => {
 
   user
     .save()
-    .then((saved) => res.json({ success: "Signup successful!" }))
+    .then((savedUser) => {
+      // Return accessId in the response upon successful signup
+      res.json({ success: "Signup successful!", accessId: savedUser.accessId });
+    })
     .catch((err) => {
       res.json({ error: "Something went wrong!" });
       console.log(err);
     });
 });
 
+//login route
 router.post("/login", async (req, res) => {
   const { accessId, password } = req.body;
   if (!accessId || !password) {
@@ -51,6 +61,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
+//password-reset route
 router.post("/password-reset", verifyToken, async (req, res) => {
   const { password } = req.body;
   if (!password)
@@ -67,6 +78,19 @@ router.post("/password-reset", verifyToken, async (req, res) => {
       res.json({ error: "Something went wrong!" });
       console.log(err);
     });
+});
+
+//login from final page
+router.post("/final/login", async (req, res) => {
+  const { accessId } = req.body;
+  const user = await User.findOne({ accessId });
+  if (user) {
+      const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);
+      res.json({ token });
+  } 
+  else{
+    res.json({error:"Something went wrong"});
+  }
 });
 
 module.exports = router;
