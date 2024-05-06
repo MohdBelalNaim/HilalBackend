@@ -117,22 +117,35 @@ router.post("/password-change", async (req, res) => {
   if (password !== confirmpassword) {
     return res.json({ error: "Password and Confirm Password should be the same" });
   }
-  const hashedPassword = await bcrypt.hash(password, 12);
-  User.updateOne(
-    { accessId: accessId },
-    {
-      $set: { password: hashedPassword },
+  try {
+    const user = await User.findOne({ accessId: accessId });
+    if (!user) {
+      return res.json({ error: "This email is not registered with HilalLink" });
     }
-  )
-    .then(() => res.json({ success: "Password updated successfully!" }))
-    .catch((err) => {
-      console.error(err);
-      res.status(500).json({ error: "Something went wrong!" });
-    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Something went wrong!" });
+  }
+  try {
+    const hashedPassword = await bcrypt.hash(password, 12);
+    await User.updateOne(
+      { accessId: accessId },
+      {
+        $set: { password: hashedPassword },
+      }
+    );
+    res.json({ success: "Password updated successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong!" });
+  }
 });
+
 
 router.post("/my-id", verifyToken, (req, res) => {
   User.findOne({ _id: req.user }).then((user) => res.json({ id: user._id }));
 });
+
+
 module.exports = router;
 
