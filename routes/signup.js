@@ -3,6 +3,7 @@ const User = require("../model/user");
 const nodemailer = require("nodemailer");
 const bcryptjs = require("bcryptjs");
 const cloudinary = require("cloudinary").v2;
+const verifyToken = require("../middlewares/verifyToken");
 
 // Configure Cloudinary
 cloudinary.config({
@@ -27,8 +28,8 @@ const mailTransport = nodemailer.createTransport({
     pass: "Ahmedkhaki@hilallink@786",
   },
 });
-
 //email config ends
+
 router.post("/personal-details/:id", (req, res) => {
   const { id } = req.params;
   const { category, gender, country, city, state } = req.body;
@@ -55,9 +56,7 @@ router.post("/personal-details/:id", (req, res) => {
   }
 });
 
-
-//email verification route
-
+//bio route
 router.post("/bio/:id", (req, res) => {
   const { id } = req.params;
   const { bio } = req.body;
@@ -80,6 +79,7 @@ router.post("/bio/:id", (req, res) => {
   }
 });
 
+//email verification
 router.post("/verify-email", async (req, res) => {
   const { to } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000);
@@ -165,21 +165,16 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
-
 // Signup address route
 router.post("/address", async (req, res) => {
   const { accessId, category,state, gender, city, country } = req.body;
 
   // Validate category, gender, and country
   const validCategories = ["Artist", "Creator", "Others"];
-  const validSate = ["Uttar Pradesh", "Bihar", "Assam"];
   const validGenders = ["Male", "Female", "Prefer not to say"];
-  const validCountries = ["India", "Pakistan", "Others"];
 
   if (!validCategories.includes(category) ||
-      !validSate.includes(state) ||
-      !validGenders.includes(gender) ||
-      !validCountries.includes(country)) {
+      !validGenders.includes(gender) ) {
     return res.json({ error: "Invalid category, gender, or country" });
   }
   
@@ -245,7 +240,7 @@ router.post("/bio", async (req, res) => {
 router.post("/photo", async (req, res) => {
   const { accessId, profileUrl, coverUrl } = req.body;
 
-  if (!accessId || !profileUrl || !coverUrl) {
+  if ( !profileUrl || !coverUrl) {
     return res.status(400).json({ error: "Access ID and profile URL are required!" });
   }
 
@@ -270,7 +265,7 @@ router.post("/photo", async (req, res) => {
 });
 
 //all user detail
-router.get('/all-user', async(req,res)=>{
+router.get('/all-user',verifyToken, async(req,res)=>{
   User.find()
   .then(found=>{
       if(found){
@@ -281,5 +276,6 @@ router.get('/all-user', async(req,res)=>{
       }
   })
 })
+
 
 module.exports = router;

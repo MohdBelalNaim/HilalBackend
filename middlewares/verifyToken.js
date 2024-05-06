@@ -10,6 +10,7 @@ module.exports = (req, res, next) => {
       return res.status(401).json({ error: "Unauthorized access" });
     }
     const { user } = payload;
+    //req.user is containing _id
     req.user = user;
     next();
   });
