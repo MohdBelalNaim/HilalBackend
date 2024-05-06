@@ -12,7 +12,9 @@ router.post("/signup", async (req, res) => {
   }
 
   if (password !== confirmpassword) {
-    return res.json({ error: "Password and confirm password should be the same!" });
+    return res.json({
+      error: "Password and confirm password should be the same!",
+    });
   }
 
   const checkUser = await User.findOne({ accessId });
@@ -87,11 +89,10 @@ router.post("/final/login", async (req, res) => {
   const { accessId } = req.body;
   const user = await User.findOne({ accessId });
   if (user) {
-      const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);
-      res.json({ token });
-  } 
-  else{
-    res.json({error:"Something went wrong"});
+    const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);
+    res.json({ token });
+  } else {
+    res.json({ error: "Something went wrong" });
   }
 });
 
@@ -129,7 +130,8 @@ router.post("/password-change", async (req, res) => {
     });
 });
 
-
-
+router.post("/my-id", verifyToken, (req, res) => {
+  User.findOne({ _id: req.user }).then((user) => res.json({ id: user._id }));
+});
 module.exports = router;
 
