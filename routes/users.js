@@ -133,8 +133,8 @@ router.post("/my", verifyToken, (req, res) => {
     });
 });
 
-router.post("/top-users", (req, res) => {
-  User.find()
+router.post("/top-users", verifyToken, (req, res) => {
+  User.find({ _id: { $ne: req.user } })
     .limit(6)
     .then((found) => {
       if (found) res.json({ found });
