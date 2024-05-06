@@ -23,7 +23,9 @@ router.post("/create", verifyToken, (req, res) => {
     });
 });
 
-router.post("/all", (req, res) => {
+
+router.post("/all" , (req, res) => {
+
   Post.find({ user: { $ne: req.user } })
     .sort({ date: -1 })
     .populate("user comments.user")
