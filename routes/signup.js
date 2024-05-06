@@ -265,7 +265,7 @@ router.post("/photo", async (req, res) => {
 });
 
 //all user detail
-router.get('/all-user',verifyToken, async(req,res)=>{
+router.get('/all-user', async(req,res)=>{
   User.find()
   .then(found=>{
       if(found){
