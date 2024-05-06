@@ -107,6 +107,7 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
+//password-change after forgot-password
 router.post("/password-change", async (req, res) => {
   const { accessId, password, confirmpassword } = req.body;
   if (!accessId || !password || !confirmpassword) {
