@@ -6,7 +6,7 @@ const verifyToken = require("../middlewares/verifyToken");
 
 //signup route
 router.post("/signup", async (req, res) => {
-  const { accessId, password, name ,confirmpassword } = req.body;
+  const { accessId, password, name, confirmpassword } = req.body;
   if (!accessId || !password || !name || !confirmpassword) {
     return res.json({ error: "All fields are required!" });
   }
@@ -30,8 +30,7 @@ router.post("/signup", async (req, res) => {
   user
     .save()
     .then((savedUser) => {
-      // Return accessId in the response upon successful signup
-      res.json({ success: "Signup successful!", accessId: savedUser.accessId });
+      res.json({ accessId: savedUser.accessId, name: savedUser.name });
     })
     .catch((err) => {
       res.json({ error: "Something went wrong!" });
@@ -63,9 +62,12 @@ router.post("/login", async (req, res) => {
 
 //password-reset route
 router.post("/password-reset", verifyToken, async (req, res) => {
-  const { password } = req.body;
-  if (!password)
+  const { currentpassword, password, confirmpassword } = req.body;
+  if ( !currentpassword || !password || !confirmpassword)
     return res.json({ error: "A required parameter was missing!" });
+  if (password !== confirmpassword) {
+    return res.json({ error: "Password and Confirm Password should be the same" });
+  }
   const hashedPassword = await bcrypt.hash(password, 12);
   User.updateOne(
     { _id: req.user },
@@ -93,4 +95,41 @@ router.post("/final/login", async (req, res) => {
   }
 });
 
+//forgot password
+router.post("/forgot-password", async (req, res) => {
+  const { accessId} = req.body;
+  if (!accessId) {
+    return res.json({ error: "Email is required" });
+  }
+  const user = await User.findOne({ accessId });
+  if (!user) {
+    return res.json({ error: "This email is not registered with HilalLink" });
+  }
+});
+
+router.post("/password-change", async (req, res) => {
+  const { accessId, password, confirmpassword } = req.body;
+  if (!accessId || !password || !confirmpassword) {
+    return res.json({ error: "A required parameter was missing!" });
+  }
+  if (password !== confirmpassword) {
+    return res.json({ error: "Password and Confirm Password should be the same" });
+  }
+  const hashedPassword = await bcrypt.hash(password, 12);
+  User.updateOne(
+    { accessId: accessId },
+    {
+      $set: { password: hashedPassword },
+    }
+  )
+    .then(() => res.json({ success: "Password updated successfully!" }))
+    .catch((err) => {
+      console.error(err);
+      res.status(500).json({ error: "Something went wrong!" });
+    });
+});
+
+
+
 module.exports = router;
+

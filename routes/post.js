@@ -44,6 +44,19 @@ router.post("/user/:id", (req, res) => {
     });
 });
 
+router.post("/my-post",verifyToken, (req, res) => {
+  Post.find({ user: req.user })
+  .populate("user")
+  .then((found) => {
+    if (found) res.json({ found });
+    else res.json({ error: "No posts found" });
+  })
+  .catch((err) => {
+    res.json({ error: "Something went wrong!" });
+    console.log(err);
+  });
+});
+
 router.post("/post-by-id/:id", (req, res) => {
   const { id } = req.params;
   if (!id) return res.json({ error: "A required parameter was missing!" });
