@@ -64,6 +64,7 @@ router.post("/login", async (req, res) => {
 
 //password-reset route
 router.post("/password-reset", verifyToken, async (req, res) => {
+  
   const { currentpassword, password, confirmpassword } = req.body;
   if (!currentpassword || !password || !confirmpassword)
     return res.json({ error: "A required parameter was missing!" });
