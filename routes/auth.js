@@ -65,10 +65,12 @@ router.post("/login", async (req, res) => {
 //password-reset route
 router.post("/password-reset", verifyToken, async (req, res) => {
   const { currentpassword, password, confirmpassword } = req.body;
-  if ( !currentpassword || !password || !confirmpassword)
+  if (!currentpassword || !password || !confirmpassword)
     return res.json({ error: "A required parameter was missing!" });
   if (password !== confirmpassword) {
-    return res.json({ error: "Password and Confirm Password should be the same" });
+    return res.json({
+      error: "Password and Confirm Password should be the same",
+    });
   }
   const hashedPassword = await bcrypt.hash(password, 12);
   User.updateOne(
@@ -98,7 +100,7 @@ router.post("/final/login", async (req, res) => {
 
 //forgot password
 router.post("/forgot-password", async (req, res) => {
-  const { accessId} = req.body;
+  const { accessId } = req.body;
   if (!accessId) {
     return res.json({ error: "Email is required" });
   }
@@ -115,7 +117,9 @@ router.post("/password-change", async (req, res) => {
     return res.json({ error: "A required parameter was missing!" });
   }
   if (password !== confirmpassword) {
-    return res.json({ error: "Password and Confirm Password should be the same" });
+    return res.json({
+      error: "Password and Confirm Password should be the same",
+    });
   }
   try {
     const user = await User.findOne({ accessId: accessId });
@@ -141,11 +145,44 @@ router.post("/password-change", async (req, res) => {
   }
 });
 
-
 router.post("/my-id", verifyToken, (req, res) => {
   User.findOne({ _id: req.user }).then((user) => res.json({ id: user._id }));
 });
 
+router.post("/make-private", verifyToken, (req, res) => {
+  User.findOneAndUpdate(
+    { _id: req.user },
+    {
+      $set: { isPrivate: true },
+    },
+    {
+      new: true,
+    }
+  )
+    .then((data) => {
+      res.json({ data });
+    })
+    .catch((err) => {
+      rmSync.json({ error: err });
+    });
+});
+
+router.post("/make-public", verifyToken, (req, res) => {
+  User.findOneAndUpdate(
+    { _id: req.user },
+    {
+      $set: { isPrivate: false },
+    },
+    {
+      new: true,
+    }
+  )
+    .then((data) => {
+      res.json({ data });
+    })
+    .catch((err) => {
+      rmSync.json({ error: err });
+    });
+});
 
 module.exports = router;
-
