@@ -134,8 +134,7 @@ router.post("/my", verifyToken, (req, res) => {
 });
 
 
-router.post("/top-users", (req, res) => {
-
+router.post("/top-users",verifyToken, (req, res) => {
   User.find({ _id: { $ne: req.user } })
     .limit(6)
     .then((found) => {
@@ -254,6 +253,28 @@ router.post("/change-password-email-verification", verifyToken, async (req, res)
     res.status(500).json({ error: "Something went wrong!" });
   }
 });
+
+router.post("/search", async (req, res) => {
+    try {
+        const keyword = req.body.keyword; // Assuming keyword is sent in request body
+
+        // Search for both users and posts
+        const users = await User.find({ name: { $regex: keyword, $options: 'i' } });
+        const posts = await Post.find({ text: { $regex: keyword, $options: 'i' } });
+
+        // Combine the search results
+        const results = { users, posts };
+
+        // Send the combined results
+        res.json({ results });
+    } catch (error) {
+        console.error("Error in search:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
+
+
 
 
 
