@@ -1,8 +1,8 @@
 const router = require("express").Router();
 const verifyToken = require("../middlewares/verifyToken");
 const User = require("../model/user");
-const Delete = require("../model/delete")
-const Post = require("../model/post")
+const Delete = require("../model/delete");
+const Post = require("../model/post");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 
@@ -133,7 +133,6 @@ router.post("/my", verifyToken, (req, res) => {
     });
 });
 
-
 router.post("/top-users", (req, res) => {
   User.find({ _id: { $ne: req.user } })
     .limit(6)
@@ -151,50 +150,55 @@ router.post("/top-users", (req, res) => {
 router.post("/delete-account", verifyToken, async (req, res) => {
   const { reason, password } = req.body;
   if (!reason || !password) {
-      return res.json({ error: "All fields are required" });
+    return res.json({ error: "All fields are required" });
   }
   try {
-      const user = await User.findById(req.user)
-      if (!user) {
-          return res.status(404).json({ error: "User not found" });
-      }
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-          return res.json({ error: "Invalid password" });
-      }
+    const user = await User.findById(req.user);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.json({ error: "Invalid password" });
+    }
 
-      // Delete posts associated with the user's account
-      await Post.deleteMany({ user: req.user });
+    // Delete posts associated with the user's account
+    await Post.deleteMany({ user: req.user });
 
-      // Create a deletion request
-      const deletionRequest = new Delete({
-          user: req.user, 
-          reason: reason
-      });
-      await deletionRequest.save();
-      
-      // Delete the user's account
-      await User.findByIdAndDelete(req.user);
-      
-      return res.json({ success: "Account and associated posts deleted successfully!" });
+    // Create a deletion request
+    const deletionRequest = new Delete({
+      user: req.user,
+      reason: reason,
+    });
+    await deletionRequest.save();
+
+    // Delete the user's account
+    await User.findByIdAndDelete(req.user);
+
+    return res.json({
+      success: "Account and associated posts deleted successfully!",
+    });
   } catch (error) {
-      console.error("Error:", error);
-      return res.status(500).json({ error: "Something went wrong!" });
+    console.error("Error:", error);
+    return res.status(500).json({ error: "Something went wrong!" });
   }
 });
 
-router.post("/change-password-email-verification", verifyToken, async (req, res) => {
-  try {
-    const foundUser = await User.findOne({ _id: req.user });
-    if (!foundUser) {
-      return res.status(404).json({ error: "User not found" });
-    }
+router.post(
+  "/change-password-email-verification",
+  verifyToken,
+  async (req, res) => {
+    try {
+      const foundUser = await User.findOne({ _id: req.user });
+      if (!foundUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
 
-    const mailOptions = {
-      from: "noreply@hilallink.com",
-      to: foundUser.accessId,
-      subject: "Password Change Notification",
-      html: `
+      const mailOptions = {
+        from: "noreply@hilallink.com",
+        to: foundUser.accessId,
+        subject: "Password Change Notification",
+        html: `
       <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
       <html xmlns="http://www.w3.org/1999/xhtml">
         <head>
@@ -237,22 +241,26 @@ router.post("/change-password-email-verification", verifyToken, async (req, res)
         </body>
       </html>
     `,
-    };
+      };
 
-    mailTransport
-      .sendMail(mailOptions)
-      .then(() => {
-        res.json({ success: "Password updated"}); // Return a valid JSON response
-      })
-      .catch((err) => {
-        console.error(err);
-        res.status(500).json({ error: "An error occurred while changing password" }); // Handle errors and return JSON
-      });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Something went wrong!" });
+      mailTransport
+        .sendMail(mailOptions)
+        .then(() => {
+          res.json({ success: "Password updated" }); // Return a valid JSON response
+        })
+        .catch((err) => {
+          console.error(err);
+          res
+            .status(500)
+            .json({ error: "An error occurred while changing password" }); // Handle errors and return JSON
+        });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Something went wrong!" });
+    }
   }
-});
+);
+
 
 router.post("/search/:keyword", async (req, res) => {
   try {
@@ -266,7 +274,7 @@ router.post("/search/:keyword", async (req, res) => {
       results.push({ user, posts: userPosts });
     }
     const posts = await Post.find({ 
-      _id: { $nin: userPostsIds }, // Exclude posts that are already in user posts
+      _id: { $nin: userPostsIds },
       text: { $regex: keyword, $options: 'i' } 
     }).populate("user");
 
