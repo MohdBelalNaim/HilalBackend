@@ -266,10 +266,19 @@ router.post("/search/:keyword", async (req, res) => {
   try {
     const { keyword } = req.params;
     const users = await User.find({ name: { $regex: keyword, $options: 'i' } });
-    const posts = await Post.find({ text: { $regex: keyword, $options: 'i' } }).populate("user");
-    const results = { users, posts };
+    let results = [];
+    let userPostsIds = [];
+    for (const user of users) {
+      const userPosts = await Post.find({ user: user._id }).limit(5).populate("user");
+      userPostsIds = userPostsIds.concat(userPosts.map(post => post._id));
+      results.push({ user, posts: userPosts });
+    }
+    const posts = await Post.find({ 
+      _id: { $nin: userPostsIds },
+      text: { $regex: keyword, $options: 'i' } 
+    }).populate("user");
 
-    res.json({ results });
+    res.json({ results, posts });
   } catch (error) {
     console.error("Error in search:", error);
     res.status(500).json({ message: "Server Error" });
