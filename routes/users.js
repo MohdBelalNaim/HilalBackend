@@ -254,24 +254,19 @@ router.post("/change-password-email-verification", verifyToken, async (req, res)
   }
 });
 
-router.post("/search", async (req, res) => {
-    try {
-        const keyword = req.body.keyword; // Assuming keyword is sent in request body
-
-        // Search for both users and posts
-        const users = await User.find({ name: { $regex: keyword, $options: 'i' } });
-        const posts = await Post.find({ text: { $regex: keyword, $options: 'i' } });
-
-        // Combine the search results
-        const results = { users, posts };
-
-        // Send the combined results
-        res.json({ results });
-    } catch (error) {
-        console.error("Error in search:", error);
-        res.status(500).json({ message: "Server Error" });
-    }
+router.post("/search/:keyword", async (req, res) => {
+  try {
+    const { keyword } = req.params;
+    const users = await User.find({ name: { $regex: keyword, $options: 'i' } });
+    const posts = await Post.find({ text: { $regex: keyword, $options: 'i' } }).populate("user");
+    const results = { users, posts };
+    res.json({ results });
+  } catch (error) {
+    console.error("Error in search:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
 });
+
 
 
 
