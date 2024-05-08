@@ -261,18 +261,14 @@ router.post(
   }
 );
 
-router.post("/search", async (req, res) => {
+
+router.post("/search/:keyword", async (req, res) => {
   try {
-    const keyword = req.body.keyword; // Assuming keyword is sent in request body
-
-    // Search for both users and posts
-    const users = await User.find({ name: { $regex: keyword, $options: "i" } });
-    const posts = await Post.find({ text: { $regex: keyword, $options: "i" } });
-
-    // Combine the search results
+    const { keyword } = req.params;
+    const users = await User.find({ name: { $regex: keyword, $options: 'i' } });
+    const posts = await Post.find({ text: { $regex: keyword, $options: 'i' } }).populate("user");
     const results = { users, posts };
 
-    // Send the combined results
     res.json({ results });
   } catch (error) {
     console.error("Error in search:", error);
