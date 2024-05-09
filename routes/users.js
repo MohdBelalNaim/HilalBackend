@@ -23,14 +23,15 @@ const mailTransport = nodemailer.createTransport({
   },
 });
 
-router.post("/all", (req, res) => {
-  User.find()
+router.post("/all",verifyToken, (req, res) => {
+  User.find({ _id: { $ne: req.user } })
+    .limit(6)
     .then((found) => {
       if (found) res.json({ found });
       else res.json({ error: "No users found" });
     })
     .catch((err) => {
-      res.json({ error: "Somethign went wrong!" });
+      res.json({ error: "Something went wrong!" });
       console.log(err);
     });
 });
@@ -134,7 +135,7 @@ router.post("/my", verifyToken, (req, res) => {
 });
 
 
-router.post("/top-users", (req, res) => {
+router.post("/top-users",verifyToken, (req, res) => {
   User.find({ _id: { $ne: req.user } })
     .limit(6)
     .then((found) => {
@@ -261,12 +262,12 @@ router.post("/search/:keyword", async (req, res) => {
     let results = [];
     let userPostsIds = [];
     for (const user of users) {
-      const userPosts = await Post.find({ user: user._id }).limit(5).populate("user");
-      userPostsIds = userPostsIds.concat(userPosts.map(post => post._id));
-      results.push({ user, posts: userPosts });
+    const userPosts = await Post.find({ user: user._id }).limit(5).populate("user");
+    userPostsIds = userPostsIds.concat(userPosts.map(post => post._id));
+    results.push({ user, posts: userPosts });
     }
     const posts = await Post.find({ 
-      _id: { $nin: userPostsIds }, // Exclude posts that are already in user posts
+      _id: { $nin: userPostsIds }, 
       text: { $regex: keyword, $options: 'i' } 
     }).populate("user");
 
