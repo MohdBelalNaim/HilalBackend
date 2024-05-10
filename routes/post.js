@@ -23,7 +23,6 @@ router.post("/create", verifyToken, (req, res) => {
     });
 });
 
-
 router.post("/all" , (req, res) => {
 
   Post.find({ user: { $ne: req.user } })
@@ -181,6 +180,7 @@ router.post("/save-post/:id", verifyToken, (req, res) => {
       console.log(err);
     });
 });
+
 router.post("/remove-save-post/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   saved
