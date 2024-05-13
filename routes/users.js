@@ -23,7 +23,7 @@ const mailTransport = nodemailer.createTransport({
   },
 });
 
-router.post("/all",verifyToken, (req, res) => {
+router.post("/all", verifyToken, (req, res) => {
   User.find({ _id: { $ne: req.user } })
     .limit(6)
     .then((found) => {
@@ -262,21 +262,22 @@ router.post(
   }
 );
 
-
 router.post("/search/:keyword", async (req, res) => {
   try {
     const { keyword } = req.params;
-    const users = await User.find({ name: { $regex: keyword, $options: 'i' } });
+    const users = await User.find({ name: { $regex: keyword, $options: "i" } });
     let results = [];
     let userPostsIds = [];
     for (const user of users) {
-    const userPosts = await Post.find({ user: user._id }).limit(5).populate("user");
-    userPostsIds = userPostsIds.concat(userPosts.map(post => post._id));
-    results.push({ user, posts: userPosts });
+      const userPosts = await Post.find({ user: user._id })
+        .limit(5)
+        .populate("user");
+      userPostsIds = userPostsIds.concat(userPosts.map((post) => post._id));
+      results.push({ user, posts: userPosts });
     }
-    const posts = await Post.find({ 
-      _id: { $nin: userPostsIds }, 
-      text: { $regex: keyword, $options: 'i' } 
+    const posts = await Post.find({
+      _id: { $nin: userPostsIds },
+      text: { $regex: keyword, $options: "i" },
     }).populate("user");
 
     res.json({ results, posts });
