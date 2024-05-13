@@ -19,6 +19,8 @@ app.use("/user", require("./routes/users"));
 app.use("/post", require("./routes/post"));
 app.use("/notification", require("./routes/notification"));
 app.use("/post-save", require("./routes/savepost"));
+app.use("/message", require("./routes/message"))
+app.use("/repost",require("./routes/repost"))
 
 app.get("/", (req, res) => {
   res.json({ message: "All set!" });
