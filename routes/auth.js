@@ -62,11 +62,57 @@ router.post("/login", async (req, res) => {
   }
 });
 
+//google-user
+router.post("/google-login", async (req, res) => {
+  const { name, accessId, photo } = req.body;
+  if (!name || !accessId) {
+    return res.json({ error: "Name and accessId are required" });
+  }
+  try {
+    let user = await User.findOne({ accessId });
+    if (!user) {
+      const randomPassword = generateRandomPassword(12); 
+      const hashedPassword = await bcrypt.hash(randomPassword, 12);
+      
+      user = new User({
+        name,
+        accessId,
+        password: hashedPassword,
+        profile_url: photo,
+      });
+      await user.save();
+      const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);
+      return res.json({ token });
+    }
+    if (user.profile_url !== photo) {
+      user.profile_url = photo; 
+      await user.save();
+    }
+
+    const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);
+    res.json({ token });
+  } catch (error) {
+    console.error("Error finding or updating user:", error);
+    res.json({ error: "Server error" });
+  }
+});
+
+// Function to generate a random password
+function generateRandomPassword(length) {
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+  return password;
+}
+
 //password-reset route
 router.post("/password-reset", verifyToken, async (req, res) => {
   
-  const { currentpassword, password, confirmpassword } = req.body;
-  if (!currentpassword || !password || !confirmpassword)
+  const { password, confirmpassword } = req.body;
+  if ( !password || !confirmpassword)
     return res.json({ error: "A required parameter was missing!" });
   if (password !== confirmpassword) {
     return res.json({
