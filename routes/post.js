@@ -194,4 +194,24 @@ router.post("/remove-save-post/:id", verifyToken, (req, res) => {
     });
 });
 
+router.post("/delete/:id", verifyToken, (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user;
+  Post.deleteOne({ _id: postId, user: userId })
+    .then(result => {
+      if (result.deletedCount === 1) {
+        res.json({ success: "Post deleted" });
+      } else {
+        res.json({ error: "Post not found" });
+      }
+    })
+    .catch(err => {
+      console.error("Error deleting post:", err);
+      res.status(500).json({ error: "Something went wrong" });
+    });
+});
+
+
+
+
 module.exports = router;
