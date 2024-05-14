@@ -32,6 +32,7 @@ const server = app.listen(port, () => {
 const io = socket(server, {
   cors: {
     origins: ["https://hilal-xi.vercel.app", "http://localhost:5173"],
+    credentials: true,
   },
 });
 
