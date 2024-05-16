@@ -25,7 +25,6 @@ const mailTransport = nodemailer.createTransport({
 
 router.post("/all", verifyToken, (req, res) => {
   User.find({ _id: { $ne: req.user } })
-    .limit(6)
     .then((found) => {
       if (found) res.json({ found });
       else res.json({ error: "No users found" });
