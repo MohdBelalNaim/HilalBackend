@@ -26,7 +26,7 @@ router.post("/create", verifyToken, (req, res) => {
 router.post("/all" , (req, res) => {
   Post.find()
     .sort({ date: -1 })
-    .populate("user comments.user original_user")
+    .populate("user comments.user original_user comments.replies")
     .then((data) => {
       if (data) res.json({ data });
       else res.json({ error: "No posts found" });
@@ -115,6 +115,36 @@ router.put("/add-comment/:id", verifyToken, (req, res) => {
     })
     .catch({ error: "Something went wrong!" });
 });
+
+//comment-reply
+router.post("/add-reply/:postId/:commentId", verifyToken, async (req, res) => {
+    const { postId, commentId } = req.params;
+    const userId = req.user;
+    const { text } = req.body;
+    try {
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.json({ error: "Post not found" });
+        }
+        const comment = post.comments.id(commentId);
+        if (!comment) {
+            return res.json({ error: "Comment not found" });
+        }
+        if (!comment.replies) {
+            comment.replies = [];
+        }
+        comment.replies.push({
+            user: userId,
+            text: text
+        });
+        await post.save();
+        res.json({ success: "Reply added successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Something went wrong" });
+    }
+});
+
 
 router.put("/remove-comment/:id", verifyToken, (req, res) => {
   const { id } = req.params;
