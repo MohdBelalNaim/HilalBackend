@@ -51,7 +51,7 @@ router.post("/by-chat/:id", verifyToken, (req, res) => {
   })
     .then((found) => res.json({ found }))
     .catch((err) => {
-      console.log(err);
+      console.log(erjhgr);
       res.json({ error: "Can't retrieve chats" });
     });
 });
