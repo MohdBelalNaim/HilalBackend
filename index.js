@@ -31,12 +31,10 @@ const server = app.listen(port, () => {
 
 const io = socket(server, {
   cors: {
-    origins: ["https://hilal-xi.vercel.app", "http://localhost:5173"],
+    origins: ["http://localhost:5173",""],
     credentials: true,
-    methods: ["GET", "POST"],
-    transports: ["websocket", "polling"],
+    transports: ["websocket","polling"],
   },
-  allowEIO3: true,
 });
 
 global.onlineUsers = new Map();

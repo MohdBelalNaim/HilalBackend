@@ -8,24 +8,31 @@ router.post("/create", verifyToken, (req, res) => {
   if (!type || !content || !to) {
     return res.json({ error: "A required parameter was missing!" });
   }
-  const notification = new Notification({
-    type,
-    content,
-    to,
-    from: req.user,
-    date: new Date(),
+  Notification.find({ type, content, to }).then((found) => {
+    if (found.length > 0) {
+      res.json({ error: "User already notified" });
+    } else {
+      const notification = new Notification({
+        type,
+        content,
+        to,
+        from: req.user,
+        date: new Date(),
+      });
+      notification
+        .save()
+        .then(() => res.json({ message: "User notified" }))
+        .catch((err) => {
+          res.json({ error: err });
+          console.log(err);
+        });
+    }
   });
-  notification
-    .save()
-    .then(() => res.json({ message: "User notified" }))
-    .catch((err) => {
-      res.json({ error: err });
-      console.log(err);
-    });
 });
 
 router.post("/all", (req, res) => {
   Notification.find()
+    .sort({ date: -1 })
     .populate("from to content")
     .then((data) => {
       res.json({ data });
