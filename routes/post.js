@@ -23,8 +23,7 @@ router.post("/create", verifyToken, (req, res) => {
     });
 });
 
-router.post("/all" , (req, res) => {
-
+router.post("/all", (req, res) => {
   Post.find({ user: { $ne: req.user } })
     .sort({ date: -1 })
     .populate("user comments.user")
@@ -45,17 +44,17 @@ router.post("/user/:id", (req, res) => {
     });
 });
 
-router.post("/my-post",verifyToken, (req, res) => {
+router.post("/my-post", verifyToken, (req, res) => {
   Post.find({ user: req.user })
-  .populate("user")
-  .then((found) => {
-    if (found) res.json({ found });
-    else res.json({ error: "No posts found" });
-  })
-  .catch((err) => {
-    res.json({ error: "Something went wrong!" });
-    console.log(err);
-  });
+    .populate("user")
+    .then((found) => {
+      if (found) res.json({ found });
+      else res.json({ error: "No posts found" });
+    })
+    .catch((err) => {
+      res.json({ error: "Something went wrong!" });
+      console.log(err);
+    });
 });
 
 router.post("/post-by-id/:id", (req, res) => {
@@ -191,6 +190,17 @@ router.post("/remove-save-post/:id", verifyToken, (req, res) => {
     .catch((err) => {
       res.json({ error: "Something went wrong!" });
       console.log(err);
+    });
+});
+
+router.post("/my-post-count", verifyToken, (req, res) => {
+  Post.countDocuments({ user: req.user })
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({ error: "Something went wrong!" });
     });
 });
 

@@ -15,6 +15,8 @@ const User = mongoose.Schema({
   isPremium: { type: Boolean, default: false },
   isPrivate: { type: Boolean, default: false },
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  blocked: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });
 
