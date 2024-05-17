@@ -8,6 +8,9 @@ router.post("/create", verifyToken, (req, res) => {
   if (!type || !content || !to) {
     return res.json({ error: "A required parameter was missing!" });
   }
+  if (to == req.user) {
+    return res.json({ error: "User engaged in theirself" });
+  }
   Notification.find({ type, content, to }).then((found) => {
     if (found.length > 0) {
       res.json({ error: "User already notified" });
