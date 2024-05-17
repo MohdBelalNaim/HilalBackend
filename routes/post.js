@@ -23,8 +23,9 @@ router.post("/create", verifyToken, (req, res) => {
     });
 });
 
-router.post("/all" , (req, res) => {
-  Post.find()
+router.post("/all", (req, res) => {
+  Post.find({ user: { $ne: req.user } })
+
     .sort({ date: -1 })
     .populate("user comments.user original_user comments.replies comments.replies.user comments.likes")
     .then((data) => {
@@ -44,8 +45,9 @@ router.post("/user/:id", (req, res) => {
     });
 });
 
-router.post("/my-post",verifyToken, (req, res) => {
+router.post("/my-post", verifyToken, (req, res) => {
   Post.find({ user: req.user })
+
   .populate("user original_user")
   .then((found) => {
     if (found) res.json({ found });
@@ -279,6 +281,17 @@ router.post("/remove-save-post/:id", verifyToken, (req, res) => {
     });
 });
 
+
+router.post("/my-post-count", verifyToken, (req, res) => {
+  Post.countDocuments({ user: req.user })
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({ error: "Something went wrong!" });
+    });
+
 router.post("/delete/:id", verifyToken, (req, res) => {
   const postId = req.params.id;
   const userId = req.user;
@@ -315,6 +328,6 @@ router.post("/edit/:id", verifyToken, (req, res) => {
         res.json({ error: "Something went wrong!" });
         console.log(err);
     });
-});
+
 
 module.exports = router;
