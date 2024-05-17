@@ -26,7 +26,7 @@ router.post("/create", verifyToken, (req, res) => {
 router.post("/all" , (req, res) => {
   Post.find()
     .sort({ date: -1 })
-    .populate("user comments.user original_user comments.replies")
+    .populate("user comments.user original_user comments.replies comments.replies.user comments.likes")
     .then((data) => {
       if (data) res.json({ data });
       else res.json({ error: "No posts found" });
@@ -143,6 +143,53 @@ router.post("/add-reply/:postId/:commentId", verifyToken, async (req, res) => {
         console.error(error);
         res.status(500).json({ error: "Something went wrong" });
     }
+});
+
+
+router.put("/comment/add-like/:commentId", verifyToken, async (req, res) => {
+  const { commentId } = req.params;
+  try {
+      const post = await Post.findOne({ "comments._id": commentId });
+        if (!post) {
+          return res.json({ error: "Comment not found!" });
+        }
+        const comment = post.comments.id(commentId);
+        if (!comment) {
+            return res.json({ error: "Comment not found" });
+        }
+        if (!comment.likes) {
+            comment.likes = [];
+        }
+        comment.likes.push(req.user);
+        await post.save();
+        res.json({ success: "like added successfully" });
+      } 
+      catch (error) {
+        console.error(error);
+        res.json({ error: "Something went wrong" });
+      }
+  
+});
+
+router.put("/comment/remove-like/:commentId", verifyToken, async (req, res) => {
+  const { commentId } = req.params;
+try {
+    const post = await Post.findOne({ "comments._id": commentId });
+    if (!post) {
+      return res.json({ error: "Comment not found!" });
+    }
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.json({ error: "Comment not found" });
+    }
+    comment.likes.pull(req.user);
+    await post.save();
+    res.json({ success: "Like removed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.json({ error: "Something went wrong" });
+}
+
 });
 
 
