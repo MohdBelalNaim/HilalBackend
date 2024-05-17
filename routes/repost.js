@@ -14,7 +14,7 @@ router.get("/fetch/all", (req,res) => {
 router.post("/delete/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   const userId = req.user;
-  Repost.findOneAndDelete({ _id: id, user: userId })
+  Post.findOneAndDelete({ _id: id, user: userId })
     .then(deletedRepost => {
       if (!deletedRepost) {
       return res.status(404).json({ error: 'Repost not found or unauthorized' });
@@ -84,5 +84,6 @@ router.get("/user-repost/:id", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Something went wrong!" });
   }
 });
+
 
 module.exports = router;
