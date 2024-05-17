@@ -1,31 +1,36 @@
 const verifyToken = require("../middlewares/verifyToken");
 const router = require("express").Router();
-const Post = require("../model/post")
+const Post = require("../model/post");
 
-router.get("/fetch/all", (req,res) => {
-    Repost.find().populate("content user")
-    .then((data)=>{res.json(data)})
-    .catch((err)=>{
-        res.json({error:"something wrong"})
-        console.log(err);
+router.get("/fetch/all", (req, res) => {
+  Repost.find()
+    .populate("content user")
+    .then((data) => {
+      res.json(data);
     })
-})
+    .catch((err) => {
+      res.json({ error: "something wrong" });
+      console.log(err);
+    });
+});
 
 router.post("/delete/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   const userId = req.user;
   Post.findOneAndDelete({ _id: id, user: userId })
-    .then(deletedRepost => {
+    .then((deletedRepost) => {
       if (!deletedRepost) {
-      return res.status(404).json({ error: 'Repost not found or unauthorized' });
-    }
-    res.json({ success: 'Repost deleted successfully'});
-  })
-  .catch(err => {
-    console.log( err);
-    res.status(500).json({ error: 'Something went wrong' });
-  });
-})
+        return res
+          .status(404)
+          .json({ error: "Repost not found or unauthorized" });
+      }
+      res.json({ success: "Repost deleted successfully" });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: "Something went wrong" });
+    });
+});
 
 //repost
 router.post("/:id", verifyToken, async (req, res) => {
@@ -36,37 +41,42 @@ router.post("/:id", verifyToken, async (req, res) => {
       return res.status(404).json({ error: "Post not found" });
     }
 
+    await Post.updateOne({ _id: id }, { $inc: { reposts: 1 } });
     await Post.updateOne(
       { _id: id },
-      { $inc: { reposts: 1 } }
+      {
+        $push: { reposted: req.user },
+      }
     );
-
     const repostedPost = new Post({
       asset_url: post.asset_url,
-      date: Date.now(), 
+      date: Date.now(),
       post_type: post.post_type,
       text: post.text,
       views: 0,
       reposts: 0,
       likes: [],
       comments: [],
-      user: req.user, 
+      user: req.user,
       original_user: post.user,
     });
 
     await repostedPost.save();
 
-    res.status(201).json({ message: "Post reposted successfully", repostedPost });
+    res
+      .status(201)
+      .json({ message: "Post reposted successfully", repostedPost });
   } catch (error) {
     console.error("Error reposting post:", error);
     res.status(500).json({ error: "Something went wrong!" });
   }
 });
 
-
 router.get("/my-reposts", verifyToken, async (req, res) => {
   try {
-    const posts = await Post.find({ $and: [{ user: req.user }, { original_user: { $exists: true } }] }).populate('user original_user');
+    const posts = await Post.find({
+      $and: [{ user: req.user }, { original_user: { $exists: true } }],
+    }).populate("user original_user");
     res.json({ posts });
   } catch (error) {
     console.error("Error fetching posts with users:", error);
@@ -77,13 +87,14 @@ router.get("/my-reposts", verifyToken, async (req, res) => {
 router.get("/user-repost/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const posts = await Post.find({ $and: [{ user: id }, { original_user: { $exists: true } }] }).populate('user original_user');
+    const posts = await Post.find({
+      $and: [{ user: id }, { original_user: { $exists: true } }],
+    }).populate("user original_user");
     res.json({ posts });
   } catch (error) {
     console.error("Error fetching posts with users:", error);
     res.status(500).json({ error: "Something went wrong!" });
   }
 });
-
 
 module.exports = router;
