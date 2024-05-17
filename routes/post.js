@@ -27,7 +27,7 @@ router.post("/all", (req, res) => {
   Post.find({ user: { $ne: req.user } })
     .sort({ date: -1 })
     .populate(
-      "user comments.user original_user comments.replies comments.replies.user comments.likes"
+      "user comments.user original_user comments.replies comments.replies.user comments.likes original_postId"
     )
     .then((data) => {
       if (data) res.json({ data });
