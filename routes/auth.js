@@ -197,10 +197,6 @@ router.post("/password-change", async (req, res) => {
   }
 });
 
-// router.post("/my-id", verifyToken, (req, res) => {
-//   User.findOne({ _id: req.user }).then((user) => res.json({ id: user._id }));
-// });
-
 router.post("/make-private", verifyToken, (req, res) => {
   User.findOneAndUpdate(
     { _id: req.user },
