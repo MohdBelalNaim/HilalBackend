@@ -2,27 +2,13 @@ const verifyToken = require("../middlewares/verifyToken");
 const router = require("express").Router();
 const Post = require("../model/post");
 
-router.get("/fetch/all", (req, res) => {
-  Repost.find()
-    .populate("content user")
-    .then((data) => {
-      res.json(data);
-    })
-    .catch((err) => {
-      res.json({ error: "something wrong" });
-      console.log(err);
-    });
-});
-
 router.post("/delete/:id", verifyToken, (req, res) => {
   const { id } = req.params;
-  const userId = req.user;
-  Post.findOneAndDelete({ _id: id, user: userId })
+  const userId = req.user
+  Post.findOneAndDelete({ original_postId: id, user: userId })
     .then((deletedRepost) => {
       if (!deletedRepost) {
-        return res
-          .status(404)
-          .json({ error: "Repost not found or unauthorized" });
+        return res.json({ error: "You are unauthorized to this post"});
       }
       res.json({ success: "Repost deleted successfully" });
     })
@@ -59,6 +45,7 @@ router.post("/:id", verifyToken, async (req, res) => {
       comments: [],
       user: req.user,
       original_user: post.user,
+      original_postId: post._id,
     });
 
     await repostedPost.save();
@@ -71,6 +58,7 @@ router.post("/:id", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Something went wrong!" });
   }
 });
+
 
 router.get("/my-reposts", verifyToken, async (req, res) => {
   try {
