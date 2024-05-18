@@ -32,7 +32,12 @@ router.post("/signup", async (req, res) => {
   user
     .save()
     .then((savedUser) => {
-      res.json({ accessId: savedUser.accessId, name: savedUser.name });
+      const token = jwt.sign({ user: savedUser._id }, process.env.JWT_SECRET);
+      res.json({
+        accessId: savedUser.accessId,
+        name: savedUser.name,
+        token: token,
+      });
     })
     .catch((err) => {
       res.json({ error: "Something went wrong!" });
@@ -71,9 +76,9 @@ router.post("/google-login", async (req, res) => {
   try {
     let user = await User.findOne({ accessId });
     if (!user) {
-      const randomPassword = generateRandomPassword(12); 
+      const randomPassword = generateRandomPassword(12);
       const hashedPassword = await bcrypt.hash(randomPassword, 12);
-      
+
       user = new User({
         name,
         accessId,
@@ -85,7 +90,7 @@ router.post("/google-login", async (req, res) => {
       return res.json({ token });
     }
     if (user.profile_url !== photo) {
-      user.profile_url = photo; 
+      user.profile_url = photo;
       await user.save();
     }
 
@@ -99,7 +104,8 @@ router.post("/google-login", async (req, res) => {
 
 // Function to generate a random password
 function generateRandomPassword(length) {
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+  const charset =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
   let password = "";
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * charset.length);
@@ -110,9 +116,8 @@ function generateRandomPassword(length) {
 
 //password-reset route
 router.post("/password-reset", verifyToken, async (req, res) => {
-  
   const { password, confirmpassword } = req.body;
-  if ( !password || !confirmpassword)
+  if (!password || !confirmpassword)
     return res.json({ error: "A required parameter was missing!" });
   if (password !== confirmpassword) {
     return res.json({
@@ -190,10 +195,6 @@ router.post("/password-change", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "Something went wrong!" });
   }
-});
-
-router.post("/my-id", verifyToken, (req, res) => {
-  User.findOne({ _id: req.user }).then((user) => res.json({ id: user._id }));
 });
 
 router.post("/make-private", verifyToken, (req, res) => {
