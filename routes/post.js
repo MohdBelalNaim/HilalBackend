@@ -118,7 +118,7 @@ router.put("/add-comment/:id", verifyToken, (req, res) => {
 });
 
 //comment-reply
-router.post("/add-reply/:postId/:commentId", verifyToken, async (req, res) => {
+router.post("/reply/:postId/:commentId", verifyToken, async (req, res) => {
   const { postId, commentId } = req.params;
   const userId = req.user;
   const { text } = req.body;
@@ -139,7 +139,7 @@ router.post("/add-reply/:postId/:commentId", verifyToken, async (req, res) => {
       text: text,
     });
     await post.save();
-    res.json({ success: "Reply added successfully" });
+    res.json({ user: userId, text });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });

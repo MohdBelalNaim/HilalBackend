@@ -12,6 +12,7 @@ const User = mongoose.Schema({
   bio: { type: String, default: "" },
   profile_url: { type: String, default: "" },
   cover_url: { type: String, default: "" },
+  isVerified: { type: Boolean, default: false },
   isPremium: { type: Boolean, default: false },
   isPrivate: { type: Boolean, default: false },
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
