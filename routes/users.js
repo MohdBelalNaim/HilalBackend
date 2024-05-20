@@ -133,7 +133,7 @@ router.post("/my", verifyToken, (req, res) => {
     });
 });
 
-router.post("/top-users",verifyToken, (req, res) => {
+router.post("/top-users", verifyToken, (req, res) => {
   User.find({ _id: { $ne: req.user } })
     .limit(6)
     .then((found) => {
@@ -284,6 +284,12 @@ router.post("/search/:keyword", async (req, res) => {
     console.error("Error in search:", error);
     res.status(500).json({ message: "Server Error" });
   }
+});
+
+router.get("/my-people/:id", (req, res) => {
+  User.findOne({ _id: req.params.id })
+    .populate("followers following")
+    .then((found) => res.json(found));
 });
 
 module.exports = router;
