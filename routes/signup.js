@@ -172,15 +172,6 @@ router.post("/verify-otp", async (req, res) => {
 // Signup address route
 router.post("/address", async (req, res) => {
   const { accessId, category,state, gender, city, country } = req.body;
-
-  // Validate category, gender, and country
-  const validCategories = ["Artist", "Creator", "Others"];
-  const validGenders = ["Male", "Female", "Prefer not to say"];
-
-  if (!validCategories.includes(category) ||
-      !validGenders.includes(gender) ) {
-    return res.json({ error: "Invalid category, gender, or country" });
-  }
   
   if (!city || !country || !state || !gender || !category) {
     return res.json({ error: "All fields are required" });
@@ -209,7 +200,7 @@ router.post("/address", async (req, res) => {
   } 
   catch (error) {
     console.error("Error adding address information:", error);
-    return res.status(500).json({ error: "Something went wrong" });
+    return res.json({ error: "Something went wrong" });
   }
 });
 
@@ -267,16 +258,19 @@ router.post("/photo", async (req, res) => {
 
 //all user detail
 router.get('/all-user', async(req,res)=>{
-  User.find()
-  .then(found=>{
-      if(found){
-          res.json({users:found})
-      }
-      else{
-          res.json({error:"no user found"})
-      }
-  })
-})
+  const { accessId } = req.query; 
+  try {
+    const users = await User.find({ accessId: { $ne: accessId } }).limit(10);
+    if (users.length > 0) {
+      res.json({ users });
+    } else {
+      res.json({ error: "No users found" });
+    }
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 
 //password-change-email
 router.post("/password-change-email", async (req, res) => {
@@ -447,7 +441,23 @@ router.post("/gmail/address", verifyToken, async (req, res) => {
   }
 });
 
+router.post('/follow-all', async (req, res) => {
+  const { accessId, users } = req.body;
+  try {
+    const currentUser = await User.findOne({ accessId });
+    if (!currentUser) {
+      return res.json({ error: "User not found" });
+    }
+    
+    currentUser.following.push(...users);
+    await currentUser.save();
 
+    res.json({ success: "Users followed successfully" });
+  } catch (error) {
+    console.error("Error following users:", error);
+    res.json({ error: "Something went wrong" });
+  }
+});
 
 
 module.exports = router;
