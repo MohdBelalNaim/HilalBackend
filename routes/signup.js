@@ -145,14 +145,21 @@ router.post("/verify-email", async (req, res) => {
 
 //otp verifictaion route
 router.post("/verify-otp", async (req, res) => {
-  const { otp, hashedOtp } = req.body; 
+  const { otp, hashedOtp, accessId } = req.body; 
 
   try {
     const otpMatch = await bcryptjs.compare(otp.toString(), hashedOtp);
 
     if (otpMatch) {
+      const user = await User.findOne({ accessId });
+      if (!user) {
+        return res.json({ error: "User not found" });
+      }
+      user.isVerified = true;
+      await user.save();
       res.json({ success: "OTP verified successfully"});
-    } else {
+    } 
+    else {
       res.json({ error: "Invalid OTP" });
     }
   } catch (err) {

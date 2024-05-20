@@ -73,6 +73,7 @@ router.post("/update", verifyToken, (req, res) => {
         profile_url,
         cover_url,
         category,
+        
       },
     }
   )

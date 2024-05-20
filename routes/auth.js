@@ -49,21 +49,25 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   const { accessId, password } = req.body;
   if (!accessId || !password) {
-    return res.json({ error: "All feilds are required!" });
+    return res.status(400).json({ error: "All fields are required!" });
   }
-  const user = await User.findOne({ accessId });
-  if (user) {
-    const isValid = await bcrypt.compare(password, user.password);
-    if (isValid) {
-      const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);
-      res.json({ token });
-    } else {
-      res.json({ error: "Invalid email or password" });
+  try {
+    const user = await User.findOne({ accessId });
+    if (!user) {
+      return res.json({ error: "This email is not registered with HilalLink" });
     }
-  } else {
-    return res.json({
-      error: "This email is not registered with HilalLink",
-    });
+    if (!user.isVerified) {
+      return res.json({ error: "Email is not verified", accessId });
+    }
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.json({ error: "Invalid email or password" });
+    }
+    const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token });
+  } catch (err) {
+    console.error(err);
+    res.json({ error: "Server error" });
   }
 });
 
