@@ -2,6 +2,7 @@ const router = require("express").Router();
 const User = require("../model/user");
 const nodemailer = require("nodemailer");
 const bcryptjs = require("bcryptjs");
+const verifyToken = require("../middlewares/verifyToken");
 const cloudinary = require("cloudinary").v2;
 
 // Configure Cloudinary
@@ -404,6 +405,48 @@ router.post("/signup-email", async (req, res) => {
       res.status(500).json({ error: "An error occurred while sending email" }); // Handle errors and return JSON
     });
 });
+
+router.post("/gmail/address", verifyToken, async (req, res) => {
+  const { category, state, gender, city, country } = req.body;
+
+  const validCategories = ["Artist", "Creator", "Others"];
+  const validGenders = ["Male", "Female", "Prefer not to say"];
+  
+  if (!validCategories.includes(category) || !validGenders.includes(gender)) {
+    return res.status(400).json({ error: "Invalid category, gender" });
+  }
+
+  // Check if all required fields are present
+  if (!city || !country || !state || !gender || !category) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  try {
+    // Find the user by ID
+    const user = await User.findOne({ _id: req.user });
+
+    // Check if user exists
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update user's address information
+    user.category = category;
+    user.state = state;
+    user.gender = gender;
+    user.country = country;
+    user.city = city;
+
+    await user.save();
+
+    // Send success response
+    return res.json({ success: "Address added successfully" });
+  } catch (error) {
+    console.error("Error adding address information:", error);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 
 
 
