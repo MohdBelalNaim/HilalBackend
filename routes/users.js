@@ -134,7 +134,7 @@ router.post("/my", verifyToken, (req, res) => {
     });
 });
 
-router.post("/top-users",verifyToken, (req, res) => {
+router.post("/top-users", verifyToken, (req, res) => {
   User.find({ _id: { $ne: req.user } })
     .limit(6)
     .then((found) => {
@@ -297,7 +297,6 @@ router.post("/search/:keyword", async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 });
-
 router.get('/check-empty-fields', verifyToken, async (req, res) => {
   try {
     const userId = req.user;
@@ -313,6 +312,11 @@ router.get('/check-empty-fields', verifyToken, async (req, res) => {
   catch (err) {
     res.json({ message: "Address information is mandatory" });
   }
+});
+router.get("/my-people/:id", (req, res) => {
+  User.findOne({ _id: req.params.id })
+    .populate("followers following")
+    .then((found) => res.json(found));
 });
 
 module.exports = router;
