@@ -312,8 +312,9 @@ router.get('/check-empty-fields', verifyToken, async (req, res) => {
     if (emptyFields.length > 0) {
       return res.json({message: 'Address information is mandatory'});
     }
-  } catch (err) {
-    res.json({ message: 'Server error', error: err.message });
+  } 
+  catch (err) {
+    res.json({ message: "Address information is mandatory" });
   }
 });
 router.get("/my-people/:id", (req, res) => {
