@@ -49,15 +49,20 @@ router.post("/user/:id", (req, res) => {
 router.post("/my-post", verifyToken, (req, res) => {
   Post.find({ user: req.user })
     .populate("user original_user")
+    .sort({ date: -1 })
     .then((found) => {
-      if (found) res.json({ found });
-      else res.json({ error: "No posts found" });
+      if (found.length > 0) {
+        res.json({ found });
+      } else {
+        res.json({ error: "No posts found" });
+      }
     })
     .catch((err) => {
-      res.json({ error: "Something went wrong!" });
       console.log(err);
+      res.status(500).json({ error: "Something went wrong!" });
     });
 });
+
 
 router.post("/post-by-id/:id", (req, res) => {
   const { id } = req.params;
