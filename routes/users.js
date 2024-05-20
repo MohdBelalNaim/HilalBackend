@@ -10,7 +10,7 @@ const nodemailer = require("nodemailer");
 const mailTransport = nodemailer.createTransport({
   host: "smtpout.secureserver.net",
   secure: true,
-  secureConnection: false, // TLS requires secureConnection to be false
+  secureConnection: false, 
   tls: {
     ciphers: "SSLv3",
   },
@@ -156,34 +156,45 @@ router.post("/delete-account", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user);
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.json({ error: "User not found" });
     }
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.json({ error: "Invalid password" });
     }
 
-    // Delete posts associated with the user's account
+    // Delete user's posts
     await Post.deleteMany({ user: req.user });
 
-    // Create a deletion request
+    // Delete comments made by the user
+    await Post.updateMany(
+      {},
+      { $pull: { comments: { user: req.user } } }
+    );
+
+    // Delete replies made by the user
+    await Post.updateMany(
+      {},
+      { $pull: { "comments.$[].replies": { user: req.user } } }
+    );
+
     const deletionRequest = new Delete({
       user: req.user,
       reason: reason,
     });
     await deletionRequest.save();
 
-    // Delete the user's account
+    // Delete the user
     await User.findByIdAndDelete(req.user);
-
     return res.json({
-      success: "Account and associated posts deleted successfully!",
+      success: "Account and all related data deleted successfully!",
     });
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({ error: "Something went wrong!" });
   }
 });
+
 
 router.post(
   "/change-password-email-verification",
@@ -284,6 +295,26 @@ router.post("/search/:keyword", async (req, res) => {
   } catch (error) {
     console.error("Error in search:", error);
     res.status(500).json({ message: "Server Error" });
+  }
+});
+
+router.get('/check-empty-fields', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user;
+    const user = await User.findById(userId);
+
+    // if (!user) {
+    //   return res.json({ message: 'User not found' });
+    // }
+
+    const fieldsToCheck = ['city', 'state', 'country', 'category', 'gender'];
+    const emptyFields = fieldsToCheck.filter(field => !user[field]);
+
+    if (emptyFields.length > 0) {
+      return res.json({message: 'Address information is mandatory'});
+    }
+  } catch (err) {
+    res.json({ message: 'Server error', error: err.message });
   }
 });
 
