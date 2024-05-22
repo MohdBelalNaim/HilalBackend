@@ -171,15 +171,6 @@ router.post("/verify-otp", async (req, res) => {
 // Signup address route
 router.post("/address", async (req, res) => {
   const { accessId, category,state, gender, city, country } = req.body;
-
-  // Validate category, gender, and country
-  const validCategories = ["Artist", "Creator", "Others"];
-  const validGenders = ["Male", "Female", "Prefer not to say"];
-
-  if (!validCategories.includes(category) ||
-      !validGenders.includes(gender) ) {
-    return res.json({ error: "Invalid category, gender, or country" });
-  }
   
   if (!city || !country || !state || !gender || !category) {
     return res.json({ error: "All fields are required" });
