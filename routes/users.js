@@ -178,6 +178,16 @@ router.post("/delete-account", verifyToken, async (req, res) => {
       { $pull: { "comments.$[].replies": { user: req.user } } }
     );
 
+    // Remove the user from followers and following lists
+    await User.updateMany(
+      { followers: req.user },
+      { $pull: { followers: req.user } }
+    );
+    await User.updateMany(
+      { following: req.user },
+      { $pull: { following: req.user } }
+    );
+
     const deletionRequest = new Delete({
       user: req.user,
       reason: reason,

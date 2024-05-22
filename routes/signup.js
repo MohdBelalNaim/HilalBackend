@@ -403,16 +403,9 @@ router.post("/signup-email", async (req, res) => {
 router.post("/gmail/address", verifyToken, async (req, res) => {
   const { category, state, gender, city, country } = req.body;
 
-  const validCategories = ["Artist", "Creator", "Others"];
-  const validGenders = ["Male", "Female", "Prefer not to say"];
-  
-  if (!validCategories.includes(category) || !validGenders.includes(gender)) {
-    return res.status(400).json({ error: "Invalid category, gender" });
-  }
 
-  // Check if all required fields are present
   if (!city || !country || !state || !gender || !category) {
-    return res.status(400).json({ error: "All fields are required" });
+    return res.json({ error: "All fields are required" });
   }
 
   try {
