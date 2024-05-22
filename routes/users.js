@@ -297,6 +297,8 @@ router.post("/search/:keyword", async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 });
+
+
 router.get('/check-empty-fields', verifyToken, async (req, res) => {
   try {
     const userId = req.user;
@@ -308,11 +310,16 @@ router.get('/check-empty-fields', verifyToken, async (req, res) => {
     if (emptyFields.length > 0) {
       return res.json({message: 'Address information is mandatory'});
     }
+    else{
+      return res.json({message:"Address is filled"})
+    }
   } 
   catch (err) {
-    res.json({ message: "Address information is mandatory" });
+    res.json({ error:"something went wrong" });
   }
 });
+
+
 router.get("/my-people/:id", (req, res) => {
   User.findOne({ _id: req.params.id })
     .populate("followers following")
