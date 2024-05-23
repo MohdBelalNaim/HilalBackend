@@ -23,6 +23,7 @@ const mailTransport = nodemailer.createTransport({
   },
 });
 
+//all  user
 router.post("/all", verifyToken, (req, res) => {
   User.find({ _id: { $ne: req.user } })
     .then((found) => {
@@ -35,6 +36,7 @@ router.post("/all", verifyToken, (req, res) => {
     });
 });
 
+//user by id
 router.post("/by-id/:id", (req, res) => {
   const { id } = req.params;
   User.findById(id)
@@ -48,6 +50,7 @@ router.post("/by-id/:id", (req, res) => {
     });
 });
 
+//update user information
 router.post("/update", verifyToken, (req, res) => {
   const {
     name,
@@ -84,6 +87,7 @@ router.post("/update", verifyToken, (req, res) => {
     });
 });
 
+//follow user route
 router.put("/follow/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   User.findByIdAndUpdate(
@@ -103,6 +107,7 @@ router.put("/follow/:id", verifyToken, (req, res) => {
   });
 });
 
+//unfollow user route
 router.put("/unfollow/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   User.findByIdAndUpdate(
@@ -122,6 +127,7 @@ router.put("/unfollow/:id", verifyToken, (req, res) => {
   });
 });
 
+//my details
 router.post("/my", verifyToken, (req, res) => {
   User.findOne({ _id: req.user })
     .then((found) => {
@@ -134,6 +140,7 @@ router.post("/my", verifyToken, (req, res) => {
     });
 });
 
+//top-users
 router.post("/top-users", verifyToken, (req, res) => {
   User.find({ _id: { $ne: req.user } })
     .limit(6)
@@ -178,6 +185,16 @@ router.post("/delete-account", verifyToken, async (req, res) => {
       { $pull: { "comments.$[].replies": { user: req.user } } }
     );
 
+    // Remove the user from followers and following lists
+    await User.updateMany(
+      { followers: req.user },
+      { $pull: { followers: req.user } }
+    );
+    await User.updateMany(
+      { following: req.user },
+      { $pull: { following: req.user } }
+    );
+
     const deletionRequest = new Delete({
       user: req.user,
       reason: reason,
@@ -195,11 +212,8 @@ router.post("/delete-account", verifyToken, async (req, res) => {
   }
 });
 
-
-router.post(
-  "/change-password-email-verification",
-  verifyToken,
-  async (req, res) => {
+//change password email verification
+router.post("/change-password-email-verification",verifyToken,async (req, res) => {
     try {
       const foundUser = await User.findOne({ _id: req.user });
       if (!foundUser) {
@@ -273,6 +287,7 @@ router.post(
   }
 );
 
+//search user or post 
 router.post("/search/:keyword", async (req, res) => {
   try {
     const { keyword } = req.params;
@@ -298,7 +313,7 @@ router.post("/search/:keyword", async (req, res) => {
   }
 });
 
-
+//gamil login address form
 router.get('/check-empty-fields', verifyToken, async (req, res) => {
   try {
     const userId = req.user;
@@ -319,7 +334,7 @@ router.get('/check-empty-fields', verifyToken, async (req, res) => {
   }
 });
 
-
+//my following followers
 router.get("/my-people/:id", (req, res) => {
   User.findOne({ _id: req.params.id })
     .populate("followers following")

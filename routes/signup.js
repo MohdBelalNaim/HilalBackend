@@ -30,6 +30,7 @@ const mailTransport = nodemailer.createTransport({
 });
 //email config ends
 
+//personal detail of user by id
 router.post("/personal-details/:id", (req, res) => {
   const { id } = req.params;
   const { category, gender, country, city, state } = req.body;
@@ -399,19 +400,13 @@ router.post("/signup-email", async (req, res) => {
     });
 });
 
+//gmail login address
 router.post("/gmail/address", verifyToken, async (req, res) => {
   const { category, state, gender, city, country } = req.body;
 
-  const validCategories = ["Artist", "Creator", "Others"];
-  const validGenders = ["Male", "Female", "Prefer not to say"];
-  
-  if (!validCategories.includes(category) || !validGenders.includes(gender)) {
-    return res.status(400).json({ error: "Invalid category, gender" });
-  }
 
-  // Check if all required fields are present
   if (!city || !country || !state || !gender || !category) {
-    return res.status(400).json({ error: "All fields are required" });
+    return res.json({ error: "All fields are required" });
   }
 
   try {
@@ -440,6 +435,7 @@ router.post("/gmail/address", verifyToken, async (req, res) => {
   }
 });
 
+//signup final follow all  
 router.post('/follow-all', async (req, res) => {
   const { accessId, users } = req.body;
   try {

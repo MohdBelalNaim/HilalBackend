@@ -6,6 +6,7 @@ router.get("/all", (req, res) => {
   res.json("Enzoi");
 });
 
+//save post
 router.post("/save/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   const savePost = new Saved({
@@ -22,6 +23,7 @@ router.post("/save/:id", verifyToken, (req, res) => {
     });
 });
 
+//post saved by me
 router.post("/my", verifyToken, (req, res) => {
   Saved.find({ user: req.user })
     .populate("user content")
