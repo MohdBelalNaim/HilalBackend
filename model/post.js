@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const PostSchema = mongoose.Schema({
+const PostSchema = new mongoose.Schema({
   asset_url: { type: String, default: "" },
   date: { type: Date, required: true },
   post_type: { type: String, required: true },
@@ -37,7 +37,8 @@ const PostSchema = mongoose.Schema({
     ref: "User",
     required: false,
   },
-  original_postId:{ type: mongoose.Schema.Types.ObjectId, ref: "Post", required: false },
+  original_postId: { type: mongoose.Schema.Types.ObjectId, ref: "Post", required: false },
 });
 
 module.exports = mongoose.model("Post", PostSchema);
+

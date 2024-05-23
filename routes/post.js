@@ -28,13 +28,19 @@ router.post("/create", verifyToken, (req, res) => {
 router.post("/all", (req, res) => {
   Post.find({ user: { $ne: req.user } })
     .sort({ date: -1 })
-    .populate(
-      "user comments.user original_user comments.replies comments.replies.user comments.likes original_postId"
-    )
-    .then((data) => {
-      if (data) res.json({ data });
-      else res.json({ error: "No posts found" });
-    });
+    .populate({
+      path: 'user comments.user original_user comments.replies.user comments.likes original_postId', // Ensure we get the isPrivate field
+    })
+    .then(posts => {
+      // Filter out posts from private accounts
+      const publicPosts = posts.filter(post => !post.user.isPrivate);
+      if (publicPosts.length > 0) {
+        res.json({ data: publicPosts });
+      } else {
+        res.json({ error: "No posts found" });
+      }
+    })
+    .catch(err => res.status(500).json({ error: err.message }));
 });
 
 //user of post

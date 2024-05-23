@@ -87,46 +87,6 @@ router.post("/update", verifyToken, (req, res) => {
     });
 });
 
-//follow user route
-router.put("/follow/:id", verifyToken, (req, res) => {
-  const { id } = req.params;
-  User.findByIdAndUpdate(
-    id,
-    {
-      $push: { followers: req.user },
-    },
-    { new: true }
-  ).then(() => {
-    User.findByIdAndUpdate(
-      req.user,
-      {
-        $push: { following: id },
-      },
-      { new: true }
-    ).then((result) => res.json({ result }));
-  });
-});
-
-//unfollow user route
-router.put("/unfollow/:id", verifyToken, (req, res) => {
-  const { id } = req.params;
-  User.findByIdAndUpdate(
-    id,
-    {
-      $pull: { followers: req.user },
-    },
-    { new: true }
-  ).then(() => {
-    User.findByIdAndUpdate(
-      req.user,
-      {
-        $pull: { following: id },
-      },
-      { new: true }
-    ).then((result) => res.json({ result }));
-  });
-});
-
 //my details
 router.post("/my", verifyToken, (req, res) => {
   User.findOne({ _id: req.user })
@@ -288,21 +248,31 @@ router.post("/change-password-email-verification",verifyToken,async (req, res) =
 );
 
 //search user or post 
-router.post("/search/:keyword", async (req, res) => {
+router.post("/search/:keyword", verifyToken, async (req, res) => {
   try {
     const { keyword } = req.params;
-    const users = await User.find({ name: { $regex: keyword, $options: "i" } });
+    const loggedInUserId = req.user._id;
+
+    // Find users excluding the logged-in user
+    const users = await User.find({ _id: { $ne: loggedInUserId }, name: { $regex: keyword, $options: "i" } });
+
     let results = [];
     let userPostsIds = [];
+
     for (const user of users) {
-      const userPosts = await Post.find({ user: user._id })
+      // Find posts for each user excluding the logged-in user's posts
+      const userPosts = await Post.find({ user: user._id, _id: { $ne: loggedInUserId } })
         .limit(5)
         .populate("user");
+
       userPostsIds = userPostsIds.concat(userPosts.map((post) => post._id));
       results.push({ user, posts: userPosts });
     }
+
+    // Find posts excluding the logged-in user's posts and matching keyword
     const posts = await Post.find({
       _id: { $nin: userPostsIds },
+      user: { $ne: loggedInUserId },
       text: { $regex: keyword, $options: "i" },
     }).populate("user");
 
@@ -341,4 +311,123 @@ router.get("/my-people/:id", (req, res) => {
     .then((found) => res.json(found));
 });
 
+// Route to send a follow request to a private user
+router.post("/privateId-request/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const userId = req.user;
+  User.findById(id)
+    .then(user => {
+      if (!user) {
+        return res.json({ error: "User not found" });
+      }
+      if (user.isPrivate) {
+        if (user.followRequests.includes(userId)) {
+          return res.json({ error: "Follow request already sent" });
+        }
+        user.followRequests.push(userId);
+        return user.save().then(() => {
+          res.json({ message: "Follow request sent", private: true });
+        });
+      } else {
+        if (user.followers.includes(userId)) {
+          return res.json({ error: "Already following this user" });
+        }
+        user.followers.push(userId);
+        return user.save().then(() => {
+          return User.findByIdAndUpdate(userId, {
+            $push: { following: id }
+          }, { new: true });
+        }).then(() => {
+          res.json({ message: "User followed directly", private: false });
+        });
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      res.json({ error: "Something went wrong" });
+    });
+});
+
+//cancel follow request
+router.post("/cancel-request/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const userId = req.user;
+  User.findById(id)
+    .then(user => {
+      if (!user) {
+        return res.json({ error: "User not found" });
+      }
+      if (!user.followRequests.includes(userId)) {
+        return res.json({ error: "No follow request found" });
+      }
+      user.followRequests.pull(userId);
+      return user.save();
+    })
+    .then(() => {
+      res.json({ message: "Follow request cancelled" });
+    })
+    .catch(err => {
+      console.error(err);
+      res.json({ error: "Something went wrong" });
+    });
+});
+
+// Route to accept a follow request
+router.post("/PrivateId-accept-follow-request/:id", verifyToken, (req, res) => {
+  const { id } = req.params; // The ID of the user who sent the follow request
+  const userId = req.user; // The ID of the authenticated user who is accepting the request
+
+  User.findById(userId)
+    .then(user => {
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      if (!user.followRequests.includes(id)) {
+        return res.status(400).json({ error: "No such follow request" });
+      }
+      user.followRequests.pull(id);
+      user.followers.push(id);
+      return user.save();
+    })
+    .then(() => {
+      return User.findByIdAndUpdate(id, {
+        $push: { following: userId }
+      }, { new: true });
+    })
+    .then(result => {
+      res.json({ result });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Something went wrong" });
+    });
+});
+
+//
+router.put("/unfollow-user/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const userId = req.user;
+
+  User.findByIdAndUpdate(
+    userId,
+    { $pull: { following: id } },
+    { new: true }
+  )
+  .then(() => {
+    return User.findByIdAndUpdate(
+      id,
+      { $pull: { followers: userId } },
+      { new: true }
+    );
+  })
+  .then(() => {
+    res.json({ message: "User unfollowed successfully" });
+  })
+  .catch(err => {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
+  });
+});
+
 module.exports = router;
+
