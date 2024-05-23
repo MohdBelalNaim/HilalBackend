@@ -341,4 +341,8 @@ router.get("/my-people/:id", (req, res) => {
     .then((found) => res.json(found));
 });
 
+router.post("/add-follow-request",(req,res)=>{
+  
+})
+
 module.exports = router;
