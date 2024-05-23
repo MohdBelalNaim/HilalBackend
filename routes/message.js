@@ -2,6 +2,7 @@ const router = require("express").Router();
 const verifyToken = require("../middlewares/verifyToken");
 const Message = require("../model/messages");
 
+//send message to user by id
 router.post("/send/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -24,7 +25,7 @@ router.post("/send/:id", verifyToken, async (req, res) => {
   }
 });
 
-
+//all message of my (either to or form)
 router.post("/my", verifyToken, (req, res) => {
   const userId = req.user;
   Message.find({ $or: [{ from: userId }, { to: userId }] })
@@ -42,7 +43,7 @@ router.post("/my", verifyToken, (req, res) => {
     });
 });
 
-
+//chat user by id
 router.post("/by-chat/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   Message.find({

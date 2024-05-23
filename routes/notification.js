@@ -3,6 +3,7 @@ const Notification = require("../model/notification");
 
 const router = require("express").Router();
 
+//create notification on any activity
 router.post("/create", verifyToken, (req, res) => {
   const { type, content, to } = req.body;
   if (!type || !content || !to) {
@@ -33,6 +34,7 @@ router.post("/create", verifyToken, (req, res) => {
   });
 });
 
+//all notification
 router.post("/all", (req, res) => {
   Notification.find()
     .sort({ date: -1 })
@@ -46,6 +48,7 @@ router.post("/all", (req, res) => {
     });
 });
 
+//notification to me
 router.post("/my", verifyToken, (req, res) => {
   Notification.find({ to: req.user })
     .populate("from to content")

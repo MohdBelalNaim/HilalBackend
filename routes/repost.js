@@ -2,6 +2,7 @@ const verifyToken = require("../middlewares/verifyToken");
 const router = require("express").Router();
 const Post = require("../model/post");
 
+//delete repost
 router.post("/delete/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
   const userId = req.user;
@@ -25,7 +26,7 @@ router.post("/delete/:id", verifyToken, async (req, res) => {
   );
 });
 
-//repost
+//repost post
 router.post("/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -66,6 +67,7 @@ router.post("/:id", verifyToken, async (req, res) => {
   }
 });
 
+//repost done by me
 router.get("/my-reposts", verifyToken, async (req, res) => {
   try {
     const posts = await Post.find({
@@ -78,6 +80,7 @@ router.get("/my-reposts", verifyToken, async (req, res) => {
   }
 });
 
+//repost doen by other user
 router.get("/user-repost/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;

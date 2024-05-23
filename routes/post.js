@@ -3,6 +3,7 @@ const Post = require("../model/post");
 const saved = require("../model/saved");
 const router = require("express").Router();
 
+//create post
 router.post("/create", verifyToken, (req, res) => {
   const { text, post_type, asset_url } = req.body;
   const post = new Post({
@@ -23,6 +24,7 @@ router.post("/create", verifyToken, (req, res) => {
     });
 });
 
+//all post
 router.post("/all", (req, res) => {
   Post.find({ user: { $ne: req.user } })
     .sort({ date: -1 })
@@ -35,6 +37,7 @@ router.post("/all", (req, res) => {
     });
 });
 
+//user of post
 router.post("/user/:id", (req, res) => {
   const { id } = req.params;
   if (!id) return res.json({ error: "A required parameter was missing!" });
@@ -46,6 +49,7 @@ router.post("/user/:id", (req, res) => {
     });
 });
 
+//all my post
 router.post("/my-post", verifyToken, (req, res) => {
   Post.find({ user: req.user })
     .populate("user original_user")
@@ -63,7 +67,7 @@ router.post("/my-post", verifyToken, (req, res) => {
     });
 });
 
-
+//post by it's id
 router.post("/post-by-id/:id", (req, res) => {
   const { id } = req.params;
   if (!id) return res.json({ error: "A required parameter was missing!" });
@@ -75,6 +79,7 @@ router.post("/post-by-id/:id", (req, res) => {
     });
 });
 
+//update views
 router.get("/update-views/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -98,6 +103,7 @@ router.get("/update-views/:id", async (req, res) => {
   }
 });
 
+//add comment
 router.put("/add-comment/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   const { comment } = req.body;
@@ -109,6 +115,7 @@ router.put("/add-comment/:id", verifyToken, (req, res) => {
         comments: {
           user: req.user,
           text: comment,
+          date: new Date(),
         },
       },
     },
@@ -151,6 +158,7 @@ router.post("/reply/:postId/:commentId", verifyToken, async (req, res) => {
   }
 });
 
+//like comment
 router.put("/comment/add-like/:commentId", verifyToken, async (req, res) => {
   const { commentId } = req.params;
   try {
@@ -174,6 +182,7 @@ router.put("/comment/add-like/:commentId", verifyToken, async (req, res) => {
   }
 });
 
+//remove like from comment
 router.put("/comment/remove-like/:commentId", verifyToken, async (req, res) => {
   const { commentId } = req.params;
   try {
@@ -194,6 +203,7 @@ router.put("/comment/remove-like/:commentId", verifyToken, async (req, res) => {
   }
 });
 
+//delete comment
 router.put("/remove-comment/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   const { comment } = req.body;
@@ -219,6 +229,7 @@ router.put("/remove-comment/:id", verifyToken, (req, res) => {
     .catch({ error: "Something went wrong!" });
 });
 
+//like post
 router.put("/add-like/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   Post.findByIdAndUpdate(
@@ -235,6 +246,7 @@ router.put("/add-like/:id", verifyToken, (req, res) => {
     });
 });
 
+//remove like from post
 router.put("/remove-like/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   Post.findByIdAndUpdate(
@@ -251,6 +263,7 @@ router.put("/remove-like/:id", verifyToken, (req, res) => {
     });
 });
 
+//save post
 router.post("/save-post/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   const savedPost = new saved({
@@ -267,6 +280,7 @@ router.post("/save-post/:id", verifyToken, (req, res) => {
     });
 });
 
+//unsave post
 router.post("/remove-save-post/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   saved
@@ -280,6 +294,7 @@ router.post("/remove-save-post/:id", verifyToken, (req, res) => {
     });
 });
 
+//number of post posted by me
 router.post("/my-post-count", verifyToken, (req, res) => {
   Post.countDocuments({ user: req.user })
     .then((result) => {
@@ -291,6 +306,7 @@ router.post("/my-post-count", verifyToken, (req, res) => {
     });
 });
 
+//delete post
 router.post("/delete/:id", verifyToken, (req, res) => {
   const postId = req.params.id;
   const userId = req.user;
@@ -308,6 +324,7 @@ router.post("/delete/:id", verifyToken, (req, res) => {
     });
 });
 
+//edit post
 router.post("/edit/:id", verifyToken, (req, res) => {
   const postId = req.params.id;
   const userId = req.user;
@@ -327,17 +344,6 @@ router.post("/edit/:id", verifyToken, (req, res) => {
     .catch((err) => {
       res.json({ error: "Something went wrong!" });
       console.log(err);
-    });
-});
-
-router.post("/my-post-count", verifyToken, (req, res) => {
-  Post.countDocuments({ user: req.user })
-    .then((result) => {
-      res.json(result);
-    })
-    .catch((err) => {
-      console.log(err);
-      res.json({ error: "Something went wrong!" });
     });
 });
 
