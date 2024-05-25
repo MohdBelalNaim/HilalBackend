@@ -91,7 +91,7 @@ router.get("/update-views/:id", async (req, res) => {
     const { id } = req.params;
     const data = await Post.findOne({ _id: id });
     if (!data) {
-      return res.status(404).json({ error: "Post not found" });
+      return res.json({ error: "Post not found" });
     }
     const currentViews = data.views;
     await Post.updateOne(
@@ -105,7 +105,7 @@ router.get("/update-views/:id", async (req, res) => {
     res.json({ success: "Views updated successfully" });
   } catch (error) {
     console.error("Error updating views:", error);
-    res.status(500).json({ error: "Something went wrong!" });
+    res.json({ error: "Something went wrong!" });
   }
 });
 
@@ -160,7 +160,7 @@ router.post("/reply/:postId/:commentId", verifyToken, async (req, res) => {
     res.json({ user: userId, text });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Something went wrong" });
+    res.json({ error: "Something went wrong" });
   }
 });
 

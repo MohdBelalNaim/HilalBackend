@@ -1,6 +1,5 @@
 const verifyToken = require("../middlewares/verifyToken");
 const Notification = require("../model/notification");
-
 const router = require("express").Router();
 
 //create notification on any activity

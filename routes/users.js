@@ -5,6 +5,7 @@ const Delete = require("../model/delete");
 const Post = require("../model/post");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+const Notification = require("../model/notification")
 
 //email config starts
 const mailTransport = nodemailer.createTransport({
@@ -251,32 +252,27 @@ router.post("/change-password-email-verification",verifyToken,async (req, res) =
 router.post("/search/:keyword", verifyToken, async (req, res) => {
   try {
     const { keyword } = req.params;
-    const loggedInUserId = req.user._id;
-
-    // Find users excluding the logged-in user
-    const users = await User.find({ _id: { $ne: loggedInUserId }, name: { $regex: keyword, $options: "i" } });
+    const users = await User.find({ name: { $regex: keyword, $options: "i" } });
 
     let results = [];
-    let userPostsIds = [];
 
     for (const user of users) {
-      // Find posts for each user excluding the logged-in user's posts
-      const userPosts = await Post.find({ user: user._id, _id: { $ne: loggedInUserId } })
-        .limit(5)
-        .populate("user");
-
-      userPostsIds = userPostsIds.concat(userPosts.map((post) => post._id));
-      results.push({ user, posts: userPosts });
+      if (user.isPrivate) {
+        results.push({ user });
+      } else {
+        const userPosts = await Post.find({ user: user._id }).limit(5).populate("user");
+        results.push({ user, posts: userPosts});
+      }
     }
+    const keywordPosts = await Post.find({ 
+          $and: [
+            { text: { $regex: keyword, $options: "i" } },
+            { user: { $nin: users.filter(user => user.isPrivate).map(user => user._id) } }
+          ]
+        }).populate("user");
 
-    // Find posts excluding the logged-in user's posts and matching keyword
-    const posts = await Post.find({
-      _id: { $nin: userPostsIds },
-      user: { $ne: loggedInUserId },
-      text: { $regex: keyword, $options: "i" },
-    }).populate("user");
 
-    res.json({ results, posts });
+    res.json({ results, keywordPosts });
   } catch (error) {
     console.error("Error in search:", error);
     res.status(500).json({ message: "Server Error" });
@@ -374,8 +370,8 @@ router.post("/cancel-request/:id", verifyToken, (req, res) => {
 
 // Route to accept a follow request
 router.post("/PrivateId-accept-follow-request/:id", verifyToken, (req, res) => {
-  const { id } = req.params; // The ID of the user who sent the follow request
-  const userId = req.user; // The ID of the authenticated user who is accepting the request
+  const { id } = req.params; 
+  const userId = req.user;
 
   User.findById(userId)
     .then(user => {
@@ -383,7 +379,7 @@ router.post("/PrivateId-accept-follow-request/:id", verifyToken, (req, res) => {
         return res.status(404).json({ error: "User not found" });
       }
       if (!user.followRequests.includes(id)) {
-        return res.status(400).json({ error: "No such follow request" });
+        return res.json({ error: "No such follow request" });
       }
       user.followRequests.pull(id);
       user.followers.push(id);
@@ -403,7 +399,31 @@ router.post("/PrivateId-accept-follow-request/:id", verifyToken, (req, res) => {
     });
 });
 
-//
+//delete-follow-request
+router.post('/delete-request/:id', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user;
+    const { id } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.json({ error: 'User not found' });
+    }
+
+    user.followRequests = user.followRequests.filter(reqId => reqId.toString() !== id);
+    await Notification.findOneAndDelete({ type: 'requested', from: id, to: userId });
+
+    await user.save();
+
+    res.json({ message: 'Follow request deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting follow request:', error);
+    res.json({ error: 'Internal server error' });
+  }
+});
+
+
+//unfollow
 router.put("/unfollow-user/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   const userId = req.user;
