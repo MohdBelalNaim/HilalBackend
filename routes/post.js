@@ -28,13 +28,19 @@ router.post("/create", verifyToken, (req, res) => {
 router.post("/all", (req, res) => {
   Post.find({ user: { $ne: req.user } })
     .sort({ date: -1 })
-    .populate(
-      "user comments.user original_user comments.replies comments.replies.user comments.likes original_postId"
-    )
-    .then((data) => {
-      if (data) res.json({ data });
-      else res.json({ error: "No posts found" });
-    });
+    .populate({
+      path: 'user comments.user original_user comments.replies.user comments.likes original_postId', // Ensure we get the isPrivate field
+    })
+    .then(posts => {
+      // Filter out posts from private accounts
+      const publicPosts = posts.filter(post => !post.user.isPrivate);
+      if (publicPosts.length > 0) {
+        res.json({ data: publicPosts });
+      } else {
+        res.json({ error: "No posts found" });
+      }
+    })
+    .catch(err => res.status(500).json({ error: err.message }));
 });
 
 //user of post
@@ -84,7 +90,7 @@ router.get("/update-views/:id", async (req, res) => {
     const { id } = req.params;
     const data = await Post.findOne({ _id: id });
     if (!data) {
-      return res.status(404).json({ error: "Post not found" });
+      return res.json({ error: "Post not found" });
     }
     const currentViews = data.views;
     await Post.updateOne(
@@ -98,7 +104,7 @@ router.get("/update-views/:id", async (req, res) => {
     res.json({ success: "Views updated successfully" });
   } catch (error) {
     console.error("Error updating views:", error);
-    res.status(500).json({ error: "Something went wrong!" });
+    res.json({ error: "Something went wrong!" });
   }
 });
 
@@ -153,7 +159,7 @@ router.post("/reply/:postId/:commentId", verifyToken, async (req, res) => {
     res.json({ user: userId, text });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Something went wrong" });
+    res.json({ error: "Something went wrong" });
   }
 });
 

@@ -34,12 +34,11 @@ router.post("/my", verifyToken, (req, res) => {
       if (found.length > 0) {
         res.json(found);
       } else {
-        res.status(404).json({ error: "No messages found for the user" });
+        res.json({ error: "No messages found for the user" });
       }
     })
     .catch((err) => {
-      console.error("Error fetching messages:", err);
-      res.status(500).json({ error: "Something went wrong!" });
+      res.json({ error: "Something went wrong!" });
     });
 });
 

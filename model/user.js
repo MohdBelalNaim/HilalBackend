@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const User = mongoose.Schema({
+const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   accessId: { type: String, required: true },
   password: { type: String, required: true },
@@ -19,6 +19,8 @@ const User = mongoose.Schema({
   blocked: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  followRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });
 
-module.exports = mongoose.model("User", User);
+module.exports = mongoose.model("User", UserSchema);
+

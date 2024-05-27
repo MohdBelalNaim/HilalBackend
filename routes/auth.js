@@ -88,7 +88,6 @@ router.post("/google-login", async (req, res) => {
         accessId,
         password: hashedPassword,
         profile_url: photo,
-        isVerified : true,
       });
       await user.save();
       const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);

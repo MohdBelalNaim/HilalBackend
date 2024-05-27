@@ -5,6 +5,7 @@ const Delete = require("../model/delete");
 const Post = require("../model/post");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+const Notification = require("../model/notification")
 
 //email config starts
 const mailTransport = nodemailer.createTransport({
@@ -85,46 +86,6 @@ router.post("/update", verifyToken, (req, res) => {
       res.json({ error: "Something went wrong!" });
       console.log(err);
     });
-});
-
-//follow user route
-router.put("/follow/:id", verifyToken, (req, res) => {
-  const { id } = req.params;
-  User.findByIdAndUpdate(
-    id,
-    {
-      $push: { followers: req.user },
-    },
-    { new: true }
-  ).then(() => {
-    User.findByIdAndUpdate(
-      req.user,
-      {
-        $push: { following: id },
-      },
-      { new: true }
-    ).then((result) => res.json({ result }));
-  });
-});
-
-//unfollow user route
-router.put("/unfollow/:id", verifyToken, (req, res) => {
-  const { id } = req.params;
-  User.findByIdAndUpdate(
-    id,
-    {
-      $pull: { followers: req.user },
-    },
-    { new: true }
-  ).then(() => {
-    User.findByIdAndUpdate(
-      req.user,
-      {
-        $pull: { following: id },
-      },
-      { new: true }
-    ).then((result) => res.json({ result }));
-  });
 });
 
 //my details
@@ -288,25 +249,30 @@ router.post("/change-password-email-verification",verifyToken,async (req, res) =
 );
 
 //search user or post 
-router.post("/search/:keyword", async (req, res) => {
+router.post("/search/:keyword", verifyToken, async (req, res) => {
   try {
     const { keyword } = req.params;
     const users = await User.find({ name: { $regex: keyword, $options: "i" } });
-    let results = [];
-    let userPostsIds = [];
-    for (const user of users) {
-      const userPosts = await Post.find({ user: user._id })
-        .limit(5)
-        .populate("user");
-      userPostsIds = userPostsIds.concat(userPosts.map((post) => post._id));
-      results.push({ user, posts: userPosts });
-    }
-    const posts = await Post.find({
-      _id: { $nin: userPostsIds },
-      text: { $regex: keyword, $options: "i" },
-    }).populate("user");
 
-    res.json({ results, posts });
+    let results = [];
+
+    for (const user of users) {
+      if (user.isPrivate) {
+        results.push({ user });
+      } else {
+        const userPosts = await Post.find({ user: user._id }).limit(5).populate("user");
+        results.push({ user, posts: userPosts});
+      }
+    }
+    const keywordPosts = await Post.find({ 
+          $and: [
+            { text: { $regex: keyword, $options: "i" } },
+            { user: { $nin: users.filter(user => user.isPrivate).map(user => user._id) } }
+          ]
+        }).populate("user");
+
+
+    res.json({ results, keywordPosts });
   } catch (error) {
     console.error("Error in search:", error);
     res.status(500).json({ message: "Server Error" });
@@ -341,8 +307,149 @@ router.get("/my-people/:id", (req, res) => {
     .then((found) => res.json(found));
 });
 
-router.post("/add-follow-request",(req,res)=>{
-  
-})
+
+// Route to send a follow request to a private user
+router.post("/privateId-request/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const userId = req.user;
+  User.findById(id)
+    .then(user => {
+      if (!user) {
+        return res.json({ error: "User not found" });
+      }
+      if (user.isPrivate) {
+        if (user.followRequests.includes(userId)) {
+          return res.json({ error: "Follow request already sent" });
+        }
+        user.followRequests.push(userId);
+        return user.save().then(() => {
+          res.json({ message: "Follow request sent", private: true });
+        });
+      } else {
+        if (user.followers.includes(userId)) {
+          return res.json({ error: "Already following this user" });
+        }
+        user.followers.push(userId);
+        return user.save().then(() => {
+          return User.findByIdAndUpdate(userId, {
+            $push: { following: id }
+          }, { new: true });
+        }).then(() => {
+          res.json({ message: "User followed directly", private: false });
+        });
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      res.json({ error: "Something went wrong" });
+    });
+});
+
+//cancel follow request
+router.post("/cancel-request/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const userId = req.user;
+  User.findById(id)
+    .then(user => {
+      if (!user) {
+        return res.json({ error: "User not found" });
+      }
+      if (!user.followRequests.includes(userId)) {
+        return res.json({ error: "No follow request found" });
+      }
+      user.followRequests.pull(userId);
+      return user.save();
+    })
+    .then(() => {
+      res.json({ message: "Follow request cancelled" });
+    })
+    .catch(err => {
+      console.error(err);
+      res.json({ error: "Something went wrong" });
+    });
+});
+
+// Route to accept a follow request
+router.post("/PrivateId-accept-follow-request/:id", verifyToken, (req, res) => {
+  const { id } = req.params; 
+  const userId = req.user;
+
+  User.findById(userId)
+    .then(user => {
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      if (!user.followRequests.includes(id)) {
+        return res.json({ error: "No such follow request" });
+      }
+      user.followRequests.pull(id);
+      user.followers.push(id);
+      return user.save();
+    })
+    .then(() => {
+      return User.findByIdAndUpdate(id, {
+        $push: { following: userId }
+      }, { new: true });
+    })
+    .then(result => {
+      res.json({ result });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Something went wrong" });
+    });
+});
+
+//delete-follow-request
+router.post('/delete-request/:id', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user;
+    const { id } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.json({ error: 'User not found' });
+    }
+
+    user.followRequests = user.followRequests.filter(reqId => reqId.toString() !== id);
+    await Notification.findOneAndDelete({ type: 'requested', from: id, to: userId });
+
+    await user.save();
+
+    res.json({ message: 'Follow request deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting follow request:', error);
+    res.json({ error: 'Internal server error' });
+  }
+});
+
+
+//unfollow
+router.put("/unfollow-user/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const userId = req.user;
+
+  User.findByIdAndUpdate(
+    userId,
+    { $pull: { following: id } },
+    { new: true }
+  )
+  .then(() => {
+    return User.findByIdAndUpdate(
+      id,
+      { $pull: { followers: userId } },
+      { new: true }
+    );
+  })
+  .then(() => {
+    res.json({ message: "User unfollowed successfully" });
+  })
+  .catch(err => {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
+  });
+});
+
 
 module.exports = router;
+
