@@ -390,14 +390,18 @@ router.post("/PrivateId-accept-follow-request/:id", verifyToken, (req, res) => {
         $push: { following: userId }
       }, { new: true });
     })
-    .then(result => {
-      res.json({ result });
+    .then(() => {
+      return Notification.findOneAndDelete({ type: 'requested', from: id, to: userId });
+    })
+    .then(() => {
+      res.json({ message: "Follow request accepted and notification deleted" });
     })
     .catch(err => {
       console.error(err);
       res.status(500).json({ error: "Something went wrong" });
     });
 });
+
 
 //delete-follow-request
 router.post('/delete-request/:id', verifyToken, async (req, res) => {
