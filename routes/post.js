@@ -73,7 +73,6 @@ router.post("/my-post", verifyToken, (req, res) => {
     });
 });
 
-//post by it's id
 router.post("/post-by-id/:id", (req, res) => {
   const { id } = req.params;
   if (!id) return res.json({ error: "A required parameter was missing!" });
@@ -350,6 +349,28 @@ router.post("/edit/:id", verifyToken, (req, res) => {
     .catch((err) => {
       res.json({ error: "Something went wrong!" });
       console.log(err);
+    });
+});
+
+router.post("/my-post-count", verifyToken, (req, res) => {
+  Post.countDocuments({ user: req.user })
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({ error: "Something went wrong!" });
+    });
+});
+
+router.post("/user-post-count/:id", (req, res) => {
+  Post.countDocuments({ user: req.params.id })
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({ error: "Something went wrong!" });
     });
 });
 

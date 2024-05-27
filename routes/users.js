@@ -307,6 +307,7 @@ router.get("/my-people/:id", (req, res) => {
     .then((found) => res.json(found));
 });
 
+
 // Route to send a follow request to a private user
 router.post("/privateId-request/:id", verifyToken, (req, res) => {
   const { id } = req.params;
@@ -448,6 +449,7 @@ router.put("/unfollow-user/:id", verifyToken, (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   });
 });
+
 
 module.exports = router;
 
