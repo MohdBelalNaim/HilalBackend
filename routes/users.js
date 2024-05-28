@@ -215,7 +215,6 @@ router.post("/change-password-email-verification",verifyToken,async (req, res) =
                             </div>
                           </div>
                           <div style="padding-top: 20px; color: rgb(153, 153, 153); text-align: center;">
-                            <p style="padding-bottom: 16px">Made with ♥ in India</p>
                           </div>
                         </td>
                       </tr>

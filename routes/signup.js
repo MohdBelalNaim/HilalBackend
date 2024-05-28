@@ -170,11 +170,17 @@ router.post("/verify-otp", async (req, res) => {
 });
 
 // Signup address route
+const isTextOnly = (str) => /^[a-zA-Z\s]+$/.test(str);
+
 router.post("/address", async (req, res) => {
-  const { accessId, category,state, gender, city, country } = req.body;
-  
+  const { accessId, category, state, gender, city, country } = req.body;
+
+  // Check if all fields are present
   if (!city || !country || !state || !gender || !category) {
     return res.json({ error: "All fields are required" });
+  }
+  if (![city, country, state, gender, category].every(isTextOnly)) {
+    return res.json({ error: "All fields must contain only text" });
   }
 
   try {
@@ -199,7 +205,6 @@ router.post("/address", async (req, res) => {
     return res.json({ success: "Address added successfully" });
   } 
   catch (error) {
-    console.error("Error adding address information:", error);
     return res.json({ error: "Something went wrong" });
   }
 });

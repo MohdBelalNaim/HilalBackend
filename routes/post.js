@@ -46,7 +46,6 @@ router.post("/all", (req, res) => {
 router.post("/user/:id", (req, res) => {
   const { id } = req.params;
   if (!id) return res.json({ error: "A required parameter was missing!" });
-
   Post.find({ user: id, original_user: { $exists: false } }) 
     .populate("user original_user")
     .sort({ date: -1 })
