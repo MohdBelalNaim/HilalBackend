@@ -43,21 +43,24 @@ router.post("/all", (req, res) => {
     .catch(err => res.status(500).json({ error: err.message }));
 });
 
-//user of post
 router.post("/user/:id", (req, res) => {
   const { id } = req.params;
   if (!id) return res.json({ error: "A required parameter was missing!" });
-  Post.find({ user: id })
+
+  Post.find({ user: id, original_user: { $exists: false } }) 
     .populate("user original_user")
+    .sort({ date: -1 })
     .then((data) => {
-      if (data) res.json({ data });
+      if (data.length > 0) res.json({ data });
       else res.json({ error: "No posts found" });
-    });
+    })
+    .catch((err) => res.json({ error: err.message }));
 });
+
 
 //all my post
 router.post("/my-post", verifyToken, (req, res) => {
-  Post.find({ user: req.user })
+  Post.find({ user: req.user , original_user: { $exists: false }})
     .populate("user original_user")
     .sort({ date: -1 })
     .then((found) => {

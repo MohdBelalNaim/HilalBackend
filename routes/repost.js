@@ -72,7 +72,9 @@ router.get("/my-reposts", verifyToken, async (req, res) => {
   try {
     const posts = await Post.find({
       $and: [{ user: req.user }, { original_user: { $exists: true } }],
-    }).populate("user original_user");
+    })
+    .populate("user original_user")
+    .sort({ date: -1 })
     res.json({ posts });
   } catch (error) {
     console.error("Error fetching posts with users:", error);
@@ -80,13 +82,15 @@ router.get("/my-reposts", verifyToken, async (req, res) => {
   }
 });
 
-//repost doen by other user
+//repost done by other user
 router.get("/user-repost/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const posts = await Post.find({
       $and: [{ user: id }, { original_user: { $exists: true } }],
-    }).populate("user original_user");
+    })
+    .populate("user original_user")
+    .sort({ date: -1 })
     res.json({ posts });
   } catch (error) {
     console.error("Error fetching posts with users:", error);
