@@ -8,42 +8,54 @@ const verifyToken = require("../middlewares/verifyToken");
 router.post("/signup", async (req, res) => {
   const { accessId, password, name, confirmpassword } = req.body;
   if (!accessId || !password || !name || !confirmpassword) {
-    return res.json({ error: "All fields are required!" });
+    return res.status(400).json({ error: "All fields are required!" });
   }
-
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(accessId)) {
+    return res.status(400).json({ error: "Invalid email format!" });
+  }
+  const namePattern = /^[a-zA-Z0-9 ]*$/;
+  if (!namePattern.test(name)) {
+    return res.status(400).json({ error: "Name must be alphanumeric, alphabets, numeric, or contain spaces!" });
+  }
+  const passwordPattern = /^[\x20-\x7E]*$/;
+  if (!passwordPattern.test(password) || !passwordPattern.test(confirmpassword)) {
+    return res.status(400).json({ error: "Password must be valid" });
+  }
   if (password !== confirmpassword) {
-    return res.json({
+    return res.status(400).json({
       error: "Password and confirm password should be the same!",
     });
   }
+  try {
+    const checkUser = await User.findOne({ accessId });
+    if (checkUser) {
+      return res.status(409).json({ error: "This email is already in use!" });
+    }
 
-  const checkUser = await User.findOne({ accessId });
-  if (checkUser) {
-    return res.json({ error: "This email is already in use!" });
-  }
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-  const hashedPassword = await bcrypt.hash(password, 12);
-  const user = new User({
-    name,
-    accessId,
-    password: hashedPassword,
-  });
-
-  user
-    .save()
-    .then((savedUser) => {
-      const token = jwt.sign({ user: savedUser._id }, process.env.JWT_SECRET);
-      res.json({
-        accessId: savedUser.accessId,
-        name: savedUser.name,
-        token: token,
-      });
-    })
-    .catch((err) => {
-      res.json({ error: "Something went wrong!" });
-      console.log(err);
+    const user = new User({
+      name,
+      accessId,
+      password: hashedPassword,
     });
+
+    const savedUser = await user.save();
+    const token = jwt.sign({ user: savedUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    return res.status(201).json({
+      accessId: savedUser.accessId,
+      name: savedUser.name,
+      token: token,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Something went wrong!" });
+  }
 });
+
+
 
 //login route
 router.post("/login", async (req, res) => {
