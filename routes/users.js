@@ -67,17 +67,17 @@ router.post("/update", verifyToken, async (req, res) => {
   } = req.body;
 
   if (!name || !city || !state || !country || !gender || !category || !bio ) {
-    return res.json({ error: "All fields are required!" });
+    return res.json({ error: "All fields are required!" })
   }
 
   if (emojiRegex.test(name) || emojiRegex.test(city) || emojiRegex.test(state) || emojiRegex.test(country) || emojiRegex.test(bio)) {
-    return res.json({ error: "Emojis are not allowed" });
+    return res.json({ error: "Emojis are not allowed" })
   }
 
   try {
     const user = await User.findOne({ _id: req.user });
     if (!user) {
-      return res.json({ error: "User not found" });
+      return res.json({ error: "User not found" })
     }
 
     user.name = name;
