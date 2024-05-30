@@ -16,7 +16,7 @@ router.post("/signup", async (req, res) => {
   }
   const namePattern = /^[a-zA-Z0-9 ]*$/;
   if (!namePattern.test(name)) {
-    return res.status(400).json({ error: "Name must be alphanumeric, alphabets, numeric, or contain spaces!" });
+    return res.status(400).json({ error: "Emojis can not be used" });
   }
   const passwordPattern = /^[\x20-\x7E]*$/;
   if (!passwordPattern.test(password) || !passwordPattern.test(confirmpassword)) {
@@ -54,8 +54,6 @@ router.post("/signup", async (req, res) => {
     return res.status(500).json({ error: "Something went wrong!" });
   }
 });
-
-
 
 //login route
 router.post("/login", async (req, res) => {

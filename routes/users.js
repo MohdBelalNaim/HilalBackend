@@ -6,6 +6,7 @@ const Post = require("../model/post");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const Notification = require("../model/notification")
+const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{2B50}-\u{2B50}]|[\u{23E9}-\u{23EF}]|[\u{23F0}-\u{23F3}]|[\u{25B6}-\u{25B6}]|[\u{25C0}-\u{25C0}]|[\u{2600}-\u{2600}]|[\u{26A1}-\u{26A1}]|[\u{2705}-\u{2705}]|[\u{274C}-\u{274C}]|[\u{2B06}-\u{2B06}]|[\u{2B07}-\u{2B07}]|[\u{2934}-\u{2934}]|[\u{2935}-\u{2935}]|[\u{2B05}-\u{2B05}]|[\u{2194}-\u{2199}]|[\u{21AA}-\u{21AA}]|[\u{21A9}-\u{21A9}]/u;
 
 //email config starts
 const mailTransport = nodemailer.createTransport({
@@ -52,7 +53,7 @@ router.post("/by-id/:id", (req, res) => {
 });
 
 //update user information
-router.post("/update", verifyToken, (req, res) => {
+router.post("/update", verifyToken, async (req, res) => {
   const {
     name,
     city,
@@ -64,29 +65,39 @@ router.post("/update", verifyToken, (req, res) => {
     profile_url,
     cover_url,
   } = req.body;
-  User.updateOne(
-    { _id: req.user },
-    {
-      $set: {
-        name,
-        city,
-        state,
-        country,
-        gender,
-        bio,
-        profile_url,
-        cover_url,
-        category,
-        
-      },
+
+  if (!name || !city || !state || !country || !gender || !category || !bio ) {
+    return res.json({ error: "All fields are required!" });
+  }
+
+  if (emojiRegex.test(name) || emojiRegex.test(city) || emojiRegex.test(state) || emojiRegex.test(country) || emojiRegex.test(bio)) {
+    return res.json({ error: "Emojis are not allowed" });
+  }
+
+  try {
+    const user = await User.findOne({ _id: req.user });
+    if (!user) {
+      return res.json({ error: "User not found" });
     }
-  )
-    .then(() => res.json({ success: "User updated" }))
-    .catch((err) => {
-      res.json({ error: "Something went wrong!" });
-      console.log(err);
-    });
+
+    user.name = name;
+    user.city = city;
+    user.state = state;
+    user.country = country;
+    user.gender = gender;
+    user.category = category;
+    user.bio = bio;
+    user.profile_url = profile_url;
+    user.cover_url = cover_url;
+
+    await user.save();
+    return res.json({ success: "User updated successfully" });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return res.json({ error: "Something went wrong" });
+  }
 });
+
 
 //my details
 router.post("/my", verifyToken, (req, res) => {
@@ -305,7 +316,6 @@ router.get("/my-people/:id", (req, res) => {
     .populate("followers following")
     .then((found) => res.json(found));
 });
-
 
 // Route to send a follow request to a private user
 router.post("/privateId-request/:id", verifyToken, (req, res) => {
