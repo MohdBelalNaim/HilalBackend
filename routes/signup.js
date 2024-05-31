@@ -4,6 +4,8 @@ const nodemailer = require("nodemailer");
 const bcryptjs = require("bcryptjs");
 const verifyToken = require("../middlewares/verifyToken");
 const cloudinary = require("cloudinary").v2;
+const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{2B50}-\u{2B50}]|[\u{23E9}-\u{23EF}]|[\u{23F0}-\u{23F3}]|[\u{25B6}-\u{25B6}]|[\u{25C0}-\u{25C0}]|[\u{2600}-\u{2600}]|[\u{26A1}-\u{26A1}]|[\u{2705}-\u{2705}]|[\u{274C}-\u{274C}]|[\u{2B06}-\u{2B06}]|[\u{2B07}-\u{2B07}]|[\u{2934}-\u{2934}]|[\u{2935}-\u{2935}]|[\u{2B05}-\u{2B05}]|[\u{2194}-\u{2199}]|[\u{21AA}-\u{21AA}]|[\u{21A9}-\u{21A9}]/u;
+const isTextOnly = (str) => /^[a-zA-Z\s]+$/.test(str);
 
 // Configure Cloudinary
 cloudinary.config({
@@ -136,11 +138,11 @@ router.post("/verify-email", async (req, res) => {
   mailTransport
     .sendMail(mailOptions)
     .then(() => {
-      res.json({ success: true, hash: hashedOtp }); // Return a valid JSON response
+      res.json({ success: true, hash: hashedOtp }); 
     })
     .catch((err) => {
       console.error(err);
-      res.status(500).json({ error: "An error occurred while sending email" }); // Handle errors and return JSON
+      res.status(500).json({ error: "An error occurred while sending email" }); 
     });
 });
 
@@ -170,38 +172,25 @@ router.post("/verify-otp", async (req, res) => {
 });
 
 // Signup address route
-const isTextOnly = (str) => /^[a-zA-Z\s]+$/.test(str);
-
 router.post("/address", async (req, res) => {
   const { accessId, category, state, gender, city, country } = req.body;
-
-  // Check if all fields are present
   if (!city || !country || !state || !gender || !category) {
     return res.json({ error: "All fields are required" });
   }
   if (![city, country, state, gender, category].every(isTextOnly)) {
     return res.json({ error: "All fields must contain only text" });
   }
-
   try {
-    // Find the user by accessId
     const user = await User.findOne({ accessId });
-
-    // Check if user exists
     if (!user) {
       return res.json({ error: "User not found" });
     }
-
-    // Update user with address information
     user.category = category;
     user.state = state;
     user.gender = gender;
     user.country = country;
     user.city = city;
-
-    // Save the updated user
     await user.save();
-
     return res.json({ success: "Address added successfully" });
   } 
   catch (error) {
@@ -212,26 +201,22 @@ router.post("/address", async (req, res) => {
 //bio information route
 router.post("/bio", async (req, res) => {
   const { accessId, bio } = req.body;
-
-   if (!bio) {
-     return res.json({ error: "All fileds are required!" });
-   }
-
+  if (!bio) {
+    return res.json({ error: "All fields are required!" });
+  }
+  if (emojiRegex.test(bio)) {
+    return res.json({ error: "Emojis are not allowed" });
+  }
   try {
     const user = await User.findOne({ accessId });
-
     if (!user) {
       return res.json({ error: "User not found" });
     }
-
     user.bio = bio;
-
     await user.save();
-
-    return res.json({ success: "bio added successfully" });
-  } 
-  catch (error) {
-    console.error("Error adding address information:", error);
+    return res.json({ success: "Bio added successfully" });
+  } catch (error) {
+    console.error("Error adding bio:", error);
     return res.json({ error: "Something went wrong" });
   }
 });
@@ -408,22 +393,14 @@ router.post("/signup-email", async (req, res) => {
 //gmail login address
 router.post("/gmail/address", verifyToken, async (req, res) => {
   const { category, state, gender, city, country } = req.body;
-
-
   if (!city || !country || !state || !gender || !category) {
     return res.json({ error: "All fields are required" });
   }
-
   try {
-    // Find the user by ID
     const user = await User.findOne({ _id: req.user });
-
-    // Check if user exists
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
-    // Update user's address information
     user.category = category;
     user.state = state;
     user.gender = gender;
@@ -431,8 +408,6 @@ router.post("/gmail/address", verifyToken, async (req, res) => {
     user.city = city;
 
     await user.save();
-
-    // Send success response
     return res.json({ success: "Address added successfully" });
   } catch (error) {
     console.error("Error adding address information:", error);
