@@ -15,7 +15,7 @@ router.post("/create", verifyToken, (req, res) => {
     if (found.length > 0) {
       res.json({ error: "User already notified" });
     } else {
-      const notification = new Notification({
+      const notification = new Notification({ 
         type,
         content,
         to,

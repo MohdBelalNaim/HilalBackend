@@ -29,24 +29,24 @@ router.post("/all", verifyToken, (req, res) => {
   Post.find({ user: { $ne: req.user } })
     .sort({ date: -1 })
     .populate({
-      path: 'user comments.user original_user comments.replies.user comments.likes original_postId', // Ensure we get the isPrivate field
+      path: "user comments.user original_user comments.replies.user comments.likes original_postId", // Ensure we get the isPrivate field
     })
-    .then(posts => {
+    .then((posts) => {
       // Filter out posts from private accounts
-      const publicPosts = posts.filter(post => !post.user.isPrivate);
+      const publicPosts = posts.filter((post) => !post?.user?.isPrivate);
       if (publicPosts.length > 0) {
         res.json({ data: publicPosts });
       } else {
         res.json({ error: "No posts found" });
       }
     })
-    .catch(err => res.status(500).json({ error: err.message }));
+    .catch((err) => res.status(500).json({ error: err.message }));
 });
 
 router.post("/user/:id", (req, res) => {
   const { id } = req.params;
   if (!id) return res.json({ error: "A required parameter was missing!" });
-  Post.find({ user: id, original_user: { $exists: false } }) 
+  Post.find({ user: id, original_user: { $exists: false } })
     .populate("user original_user")
     .sort({ date: -1 })
     .then((data) => {
@@ -56,10 +56,9 @@ router.post("/user/:id", (req, res) => {
     .catch((err) => res.json({ error: err.message }));
 });
 
-
 //all my post
 router.post("/my-post", verifyToken, (req, res) => {
-  Post.find({ user: req.user , original_user: { $exists: false }})
+  Post.find({ user: req.user, original_user: { $exists: false } })
     .populate("user original_user")
     .sort({ date: -1 })
     .then((found) => {
