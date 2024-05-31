@@ -6,7 +6,6 @@ const PostSchema = new mongoose.Schema({
   post_type: { type: String, required: true },
   text: { type: String, default: "" },
   views: { type: Number, default: 0 },
-  reposts: { type: Number, default: 0 },
   reposted: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   comments: [

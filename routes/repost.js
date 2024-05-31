@@ -26,6 +26,28 @@ router.post("/delete/:id", verifyToken, async (req, res) => {
   );
 });
 
+router.post("/repost-delete/:id", verifyToken, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user;
+  try {
+    const deletedRepost = await Post.findOneAndDelete({ _id: id, user: userId });
+    if (!deletedRepost) {
+      return res.json({ error: "You are unauthorized to delete this post" });
+    }
+    await Post.updateOne(
+      { _id: deletedRepost.original_postId },
+      {
+        $pull: { reposted: userId },
+      }
+    );
+    res.json({ success: "Repost deleted successfully" });
+  } catch (err) {
+    console.log(err);
+    res.json({ error: "Something went wrong" });
+  }
+});
+
+
 //repost post
 router.post("/:id", verifyToken, async (req, res) => {
   try {
@@ -34,8 +56,6 @@ router.post("/:id", verifyToken, async (req, res) => {
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
-
-    await Post.updateOne({ _id: id }, { $inc: { reposts: 1 } });
     await Post.updateOne(
       { _id: id },
       {
@@ -47,25 +67,22 @@ router.post("/:id", verifyToken, async (req, res) => {
       date: Date.now(),
       post_type: post.post_type,
       text: post.text,
-      views: 0,
-      reposts: 0,
-      likes: [],
-      comments: [],
+      views: post.views,
+      reposted: post.reposted.concat(req.user),
+      likes: post.likes,
+      comments: post.comments,
       user: req.user,
       original_user: post.user,
       original_postId: post._id,
     });
-
     await repostedPost.save();
-
-    res
-      .status(201)
-      .json({ message: "Post reposted successfully", repostedPost });
+    res.json({ success: "Post reposted successfully", repostedPost });
   } catch (error) {
     console.error("Error reposting post:", error);
     res.status(500).json({ error: "Something went wrong!" });
   }
 });
+
 
 //repost done by me
 router.get("/my-reposts", verifyToken, async (req, res) => {

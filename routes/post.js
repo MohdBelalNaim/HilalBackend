@@ -79,7 +79,7 @@ router.post("/post-by-id/:id", (req, res) => {
   const { id } = req.params;
   if (!id) return res.json({ error: "A required parameter was missing!" });
   Post.findById(id)
-    .populate("user comments.user original_user")
+    .populate("user comments.user original_user likes")
     .then((data) => {
       if (data) res.json({ data });
       else res.json({ error: "No posts found" });
