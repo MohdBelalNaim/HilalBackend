@@ -177,7 +177,7 @@ router.post("/address", async (req, res) => {
   if (!city || !country || !state || !gender || !category) {
     return res.json({ error: "All fields are required" });
   }
-  if (![city, country, state, gender, category].every(isTextOnly)) {
+  if (![city, country, state].every(isTextOnly)) {
     return res.json({ error: "All fields must contain only text" });
   }
   try {
