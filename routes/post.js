@@ -234,6 +234,30 @@ router.put("/remove-comment/:id", verifyToken, (req, res) => {
     .catch({ error: "Something went wrong!" });
 });
 
+router.put("/remove-other-comment/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { comment, user } = req.body;
+  if (!comment) return res.json({ error: "A required parameter was missing!" });
+  Post.findByIdAndUpdate(
+    id,
+    {
+      $pull: {
+        comments: {
+          text: comment,
+        },
+      },
+    },
+    {
+      new: true,
+    }
+  )
+    .populate("comments.user")
+    .then((updated) => {
+      res.json({ updated });
+    })
+    .catch({ error: "Something went wrong!" });
+});
+
 //like post
 router.put("/add-like/:id", verifyToken, (req, res) => {
   const { id } = req.params;
@@ -373,5 +397,25 @@ router.post("/user-post-count/:id", (req, res) => {
       res.json({ error: "Something went wrong!" });
     });
 });
+router.post("/check-post/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  const userId = req.user;
+  if (!id) return res.json({ error: "A required parameter was missing!" });
+  Post.findOne({ _id: id, user: userId })
+    .then((data) => {
+      if (data !== null && data !== undefined) {
+        // Post with given id and user exists
+        res.json({ success: true, id, userId });
+      } else {
+        // No post found with the given id and user
+        res.json({ error: "No posts found" });
+      }
+    })
+    .catch((error) => {
+      console.error("Error checking post:", error);
+      res.json({ error: "An error occurred while checking the post" });
+    });
+});
+
 
 module.exports = router;
