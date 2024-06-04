@@ -6,61 +6,44 @@ const Post = require("../model/post");
 router.post("/delete/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
   const userId = req.user;
-  Post.findOneAndDelete({ original_postId: id, user: userId })
-    .then((deletedRepost) => {
-      if (!deletedRepost) {
-        return res.json({ error: "You are unauthorized to this post" });
-      }
-      res.json({ success: "Repost deleted successfully" });
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).json({ error: "Something went wrong" });
-    });
-  await Post.updateOne({ _id: id }, { $inc: { reposts: -1 } });
-  await Post.updateOne(
-    { _id: id },
-    {
-      $pull: { reposted: req.user },
-    }
-  );
-});
-
-router.post("/repost-delete/:id", verifyToken, async (req, res) => {
-  const { id } = req.params;
-  const userId = req.user;
   try {
-    const deletedRepost = await Post.findOneAndDelete({ _id: id, user: userId });
+    const deletedRepost = await Post.findOneAndDelete({ original_postId: id, user: userId });
     if (!deletedRepost) {
-      return res.json({ error: "You are unauthorized to delete this post" });
+      return res.json({ error: "You are unauthorized to delete this repost" });
     }
     await Post.updateOne(
-      { _id: deletedRepost.original_postId },
-      {
-        $pull: { reposted: userId },
-      }
+      { _id: id },
+      { $pull: { reposted: req.user } }
+    );
+    await Post.updateMany(
+      { original_postId: id },
+      { $pull: { reposted: req.user } }
     );
     res.json({ success: "Repost deleted successfully" });
   } catch (err) {
-    console.log(err);
-    res.json({ error: "Something went wrong" });
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
   }
 });
 
 
-//repost post
+//create repost 
 router.post("/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user;
     const post = await Post.findById(id);
     if (!post) {
-      return res.status(404).json({ error: "Post not found" });
+      return res.json({ error: "Post not found" });
     }
+    const originalPostId = post.original_postId ? post.original_postId : post._id;
+    await Post.updateMany(
+      { original_postId: originalPostId },
+      { $push: { reposted: userId } }
+    );
     await Post.updateOne(
-      { _id: id },
-      {
-        $push: { reposted: req.user },
-      }
+      { _id: originalPostId },
+      { $push: { reposted: userId } }
     );
     const repostedPost = new Post({
       asset_url: post.asset_url,
@@ -68,21 +51,21 @@ router.post("/:id", verifyToken, async (req, res) => {
       post_type: post.post_type,
       text: post.text,
       views: post.views,
-      reposted: post.reposted.concat(req.user),
+      reposted: post.reposted.concat(userId), 
       likes: post.likes,
       comments: post.comments,
-      user: req.user,
-      original_user: post.user,
-      original_postId: post._id,
+      user: userId,
+      original_user: post.original_user ? post.original_user : post.user,
+      original_postId: originalPostId,
     });
-    await repostedPost.save();
-    res.json({ success: "Post reposted successfully", repostedPost });
+    const savedRepostedPost = await repostedPost.save();
+    await savedRepostedPost.populate("repostedBy original_user original_postId comments");
+    res.json({ success: "Post reposted successfully", repostedPost: savedRepostedPost });
   } catch (error) {
     console.error("Error reposting post:", error);
-    res.status(500).json({ error: "Something went wrong!" });
+    res.json({ error: "Something went wrong!" });
   }
 });
-
 
 //repost done by me
 router.get("/my-reposts", verifyToken, async (req, res) => {
