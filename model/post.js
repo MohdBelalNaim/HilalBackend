@@ -7,6 +7,7 @@ const PostSchema = new mongoose.Schema({
   text: { type: String, default: "" },
   views: { type: Number, default: 0 },
   reposted: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  repostedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   comments: [
     {
@@ -20,11 +21,7 @@ const PostSchema = new mongoose.Schema({
       likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
       replies: [
         {
-          user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-          },
+          user: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
           text: { type: String, required: true },
         },
       ],
