@@ -44,10 +44,11 @@ router.post("/signup", async (req, res) => {
     const savedUser = await user.save();
     const token = jwt.sign({ user: savedUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-    return res.status(201).json({
+    return res.json({
       accessId: savedUser.accessId,
       name: savedUser.name,
       token: token,
+      id: savedUser._id,
     });
   } catch (err) {
     console.error(err);
@@ -74,7 +75,8 @@ router.post("/login", async (req, res) => {
       return res.json({ error: "Invalid email or password" });
     }
     const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+    const id = user._id;
+    res.json({ token, id });
   } catch (err) {
     console.error(err);
     res.json({ error: "Server error" });
@@ -109,7 +111,8 @@ router.post("/google-login", async (req, res) => {
     }
 
     const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);
-    res.json({ token });
+    const id = user._id;
+    res.json({ token, id });
   } catch (error) {
     console.error("Error finding or updating user:", error);
     res.json({ error: "Server error" });
@@ -158,7 +161,8 @@ router.post("/final/login", async (req, res) => {
   const user = await User.findOne({ accessId });
   if (user) {
     const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET);
-    res.json({ token });
+    const id = user._id;
+    res.json({ token, id });
   } else {
     res.json({ error: "Something went wrong" });
   }

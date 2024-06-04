@@ -426,7 +426,6 @@ router.post('/follow-all', async (req, res) => {
     
     currentUser.following.push(...users);
     await currentUser.save();
-
     res.json({ success: "Users followed successfully" });
   } catch (error) {
     console.error("Error following users:", error);
