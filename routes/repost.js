@@ -22,10 +22,9 @@ router.post("/delete/:id", verifyToken, async (req, res) => {
     res.json({ success: "Repost deleted successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Something went wrong" });
+    res.json({ error: "Something went wrong" });
   }
 });
-
 
 //create repost 
 router.post("/:id", verifyToken, async (req, res) => {
