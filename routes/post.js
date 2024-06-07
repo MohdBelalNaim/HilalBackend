@@ -2,6 +2,7 @@ const verifyToken = require("../middlewares/verifyToken");
 const Post = require("../model/post");
 const saved = require("../model/saved");
 const router = require("express").Router();
+const Notification = require("../model/notification")
 
 //create post
 router.post("/create", verifyToken, (req, res) => {
@@ -336,22 +337,26 @@ router.post("/my-post-count", verifyToken, (req, res) => {
 });
 
 //delete post
-router.post("/delete/:id", verifyToken, (req, res) => {
-  const postId = req.params.id;
-  const userId = req.user;
-  Post.deleteOne({ _id: postId, user: userId })
-    .then((result) => {
-      if (result.deletedCount === 1) {
-        res.json({ success: "Post deleted" });
-      } else {
-        res.json({ error: "Post not found" });
-      }
-    })
-    .catch((err) => {
-      console.error("Error deleting post:", err);
-      res.status(500).json({ error: "Something went wrong" });
-    });
+router.post("/delete/:id", verifyToken, async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user;
+
+    const post = await Post.findOne({ _id: postId, user: userId });
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+    await Notification.deleteMany({ content: postId });
+    await Post.deleteMany({ original_postId: postId });
+    await post.deleteOne();
+    return res.json({ success: "Post and related data deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting post or related data:", err);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
 });
+
 
 //edit post
 router.post("/edit/:id", verifyToken, (req, res) => {

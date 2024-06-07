@@ -141,23 +141,15 @@ router.post("/delete-account", verifyToken, async (req, res) => {
     if (!isValidPassword) {
       return res.json({ error: "Invalid password" });
     }
-
-    // Delete user's posts
     await Post.deleteMany({ user: req.user });
-
-    // Delete comments made by the user
     await Post.updateMany(
       {},
       { $pull: { comments: { user: req.user } } }
     );
-
-    // Delete replies made by the user
     await Post.updateMany(
       {},
       { $pull: { "comments.$[].replies": { user: req.user } } }
     );
-
-    // Remove the user from followers and following lists
     await User.updateMany(
       { followers: req.user },
       { $pull: { followers: req.user } }
@@ -172,8 +164,6 @@ router.post("/delete-account", verifyToken, async (req, res) => {
       reason: reason,
     });
     await deletionRequest.save();
-
-    // Delete the user
     await User.findByIdAndDelete(req.user);
     return res.json({
       success: "Account and all related data deleted successfully!",
