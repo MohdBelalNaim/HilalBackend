@@ -417,5 +417,15 @@ router.post("/check-post/:id", verifyToken, (req, res) => {
     });
 });
 
+router.post("/check-repost/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  Post.findById(id).then((found) => {
+    if (found?.reposted?.includes(req.user)) {
+      return res.json({ status: true });
+    } else {
+      return res.json({ status: false });
+    }
+  });
+});
 
 module.exports = router;
