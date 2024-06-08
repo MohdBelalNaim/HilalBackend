@@ -402,6 +402,7 @@ router.post("/user-post-count/:id", (req, res) => {
       res.json({ error: "Something went wrong!" });
     });
 });
+
 router.post("/check-post/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   const userId = req.user;
@@ -409,10 +410,8 @@ router.post("/check-post/:id", verifyToken, (req, res) => {
   Post.findOne({ _id: id, user: userId })
     .then((data) => {
       if (data !== null && data !== undefined) {
-        // Post with given id and user exists
         res.json({ success: true, id, userId });
       } else {
-        // No post found with the given id and user
         res.json({ error: "No posts found" });
       }
     })

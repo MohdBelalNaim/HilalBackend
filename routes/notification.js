@@ -3,36 +3,35 @@ const Notification = require("../model/notification");
 const router = require("express").Router();
 
 //create notification on any activity
-router.post("/create", verifyToken, (req, res) => {
+router.post("/create", verifyToken, async (req, res) => {
   const { type, content, to } = req.body;
-
   if (!type || !content || !to) {
-    return res.json({ error: "A required parameter was missing!" });
+    return res.status(400).json({ error: "A required parameter was missing!" });
   }
-
   if (to == req.user) {
-    return res.json({ error: "User engaged in themselves" });
+    return res.status(400).json({ error: "User cannot notify themselves" });
   }
+  try {
+    const existingNotification = await Notification.findOne({ type, content, from: req.user, to });
 
-  const notification = new Notification({
-    type,
-    content,
-    to,
-    read: false,
-    from: req.user,
-    date: new Date(),
-  });
-
-  notification
-    .save()
-    .then(() => res.json({ message: "User notified", notification }))
-    .catch((err) => {
-      res.json({ error: err });
-      console.log(err);
+    if (existingNotification) {
+      return res.status(400).json({ error: "Notification already exists" });
+    }
+    const notification = new Notification({
+      type,
+      content,
+      to,
+      read: false,
+      from: req.user,
+      date: new Date(),
     });
+    await notification.save();
+    res.json({ message: "User notified", notification });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong!" });
+  }
 });
-
-
 
 //all notification
 router.post("/all", (req, res) => {
@@ -51,15 +50,17 @@ router.post("/all", (req, res) => {
 //notification to me
 router.post("/my", verifyToken, (req, res) => {
   Notification.find({ to: req.user })
+    .sort({ date: -1 }) // Sort by createdAt field in descending order
     .populate("from to content")
     .then((data) => {
       res.json({ data });
     })
     .catch((err) => {
-      res.json({ error: "Something went wrong!" });
-      console.log(err);
+      res.status(500).json({ error: "Something went wrong!" });
+      console.error(err);
     });
 });
+
 
 //notification count
 router.post("/count",verifyToken, async (req, res) => {
