@@ -98,7 +98,6 @@ router.post("/update", verifyToken, async (req, res) => {
   }
 });
 
-
 //my details
 router.post("/my", verifyToken, (req, res) => {
   User.findOne({ _id: req.user })
