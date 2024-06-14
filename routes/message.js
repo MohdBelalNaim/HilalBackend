@@ -63,4 +63,38 @@ router.post("/by-chat/:id", verifyToken, (req, res) => {
     });
 });
 
+router.post("/delete/:id", verifyToken, (req, res) => {
+  const { id } = req.params;
+  Message.findOneAndDelete({from: req.user, _id: id})
+    .then((found) => {
+      if (found) {
+        res.json({ success: "Message deleted successfully" });
+      } else {
+        res.json({ error: "Message not found" });
+      }
+    })
+    .catch((err) => {
+      res.json({ error: "An error occurred while deleting the message" });
+    });
+});
+
+//find message by id
+router.post("/:id", (req, res) => {
+  const { id } = req.params;
+  Message.findOne({ _id: id })
+    .populate("content from")
+    .then((found) => {
+      if (found) {
+        res.json({ found });
+      } else {
+        res.status(404).json({ error: "Message not found" });
+      }
+    })
+    .catch((err) => {
+      res.status(500).json({ error: "An error occurred while retrieving the message" });
+    });
+});
+
+
+
 module.exports = router;
