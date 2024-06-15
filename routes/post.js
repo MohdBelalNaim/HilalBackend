@@ -432,4 +432,46 @@ router.post("/check-repost/:id", verifyToken, (req, res) => {
   });
 });
 
+//fetch logged user activity post
+router.post("/user-activity", verifyToken, async (req, res) => {
+    const userId = req.user;
+    Post.find({
+      $or: [
+        { likes: userId },
+        { "comments.user": userId }
+      ]
+    })
+    .populate("user comments likes") 
+    .sort({ date: -1 })
+    .then((found)=>{
+      if (found.length > 0) {
+        res.json({ found });
+      } else {
+        res.json({ error: "No posts found" });
+      }
+    })
+  } 
+);
+
+//fetch other user activity post
+router.post("/other-user-activity/:id", async (req, res) => {
+  const userId = req.params.id;
+  Post.find({
+      $or: [
+        { likes: userId },
+        { "comments.user": userId }
+      ]
+    })
+    .populate("user comments likes") 
+    .sort({ date: -1 })
+    .then((found)=>{
+      if (found.length > 0) {
+        res.json({ found });
+      } else {
+        res.json({ error: "No posts found" });
+      }
+    })
+});
+
+
 module.exports = router;
